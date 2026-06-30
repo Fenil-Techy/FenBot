@@ -1,13 +1,5 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-
-class chatRequest(BaseModel):
-    msg:str
-    
+from app.routes.chat import router as chat_router
 app= FastAPI()
 
-@app.post("/")
-def chat(request:chatRequest):
-    return {
-        "message":f"recieved msg: {request.msg}"
-    }
+app.include_router(chat_router)
