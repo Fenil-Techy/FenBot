@@ -1,7 +1,17 @@
 from pydantic import BaseModel
+from typing import List, Optional
+
+
+class Part(BaseModel):
+    type: str
+    text: Optional[str] = None
+
+
+class Message(BaseModel):
+    role: str
+    parts: List[Part]
+    id: Optional[str] = None
+
 
 class chatRequest(BaseModel):
-    message:str
-class chatResponse(BaseModel):
-    reply:str
-    
+    messages: List[Message]
