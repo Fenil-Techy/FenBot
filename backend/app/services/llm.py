@@ -1,16 +1,59 @@
-from app.services.prompt import SYSTEM_PROMPT
+from app.utils.follow_up_input import follow_up_input
+from app.services.tool_executor import execute_tool
+from app.tools.schema.shopify.tool_schema import TOOLS
+from app.services.rag import retrieve
+from app.prompts.prompt import SYSTEM_PROMPT_TEMPLATE
 from openai import AsyncOpenAI
 from app.core.config import settings
+import logging
+
+logger=logging.getLogger(__name__)
 
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
-async def generate(messages:list,*,system_prompt=SYSTEM_PROMPT,model="gpt-4o-mini",**kwargs):
+async def generate(messages:list,*,system_prompt_template=SYSTEM_PROMPT_TEMPLATE,model="gpt-4o-mini",client_id:str="default",**kwargs):
+    last_message=messages[-1]["content"]
+    retrieved=await retrieve(last_message,client_id=client_id)
+    logger.debug(retrieved)
+    context="\n".join(f"-{chunk}" for chunk in retrieved) or "no relevant context found"
+    system_prompt=system_prompt_template.format(context=context)
+    full_input=[{"role":"system","content":system_prompt},*messages]
+    logger.debug(full_input)
     response= await client.responses.create(
         model=model,
-        input=[{"role":"system","content":system_prompt},*messages],
+        input=full_input,
+        tools=TOOLS,
         stream=True,   
         **kwargs
     )
+    
+    function_call=None
     async for event in response:
+        logger.debug(event.type)
         if event.type == "response.output_text.delta":
             yield event.delta
+        elif event.type == "response.output_item.added":
+            item=event.item
+            if item.type=="function_call":
+                function_call={"name":item.name,"call_id":item.call_id,"arguments":""}
+        elif event.type == "response.function_call_arguments.delta":
+            if function_call:
+                function_call["arguments"]+=event.delta
+
+    if function_call:
+        tool_result=await execute_tool(function_call)
+        logger.debug(tool_result)
+        follow_up_messages=follow_up_input(full_input,function_call,tool_result)
+        logger.debug(follow_up_messages)
+
+        follow_up=await client.responses.create(
+            model=model,
+            input=follow_up_messages,
+            stream=True,
+            **kwargs
+        )
+       
+        async for event in follow_up:
+            logger.debug(event.type)
+            if event.type=="response.output_text.delta":
+                yield event.delta
