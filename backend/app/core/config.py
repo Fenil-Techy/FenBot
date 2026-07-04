@@ -2,6 +2,9 @@ from pydantic_settings import BaseSettings,SettingsConfigDict
 
 class Settings(BaseSettings):
     OPENAI_API_KEY:str
+    DATABASE_URL:str
+    SHOPIFY_STORE_DOMAIN: str
+    SHOPIFY_ACCESS_TOKEN: str
     
     model_config=SettingsConfigDict(
         env_file=".env",
