@@ -1,28 +1,23 @@
-"use client"
-import { useChatAi } from "@/hooks/useChatAi"
+"use client";
+import { useChatAi } from "@/hooks/useChatAi";
+import { MessageList } from "./MessageList";
+import { ChatInput } from "./ChatInput";
 
-export function Chat(){
-    const{messages,sendMessage,status}=useChatAi()
+export function Chat() {
+  const { messages, sendMessage, status } = useChatAi();
 
-    return(
+  return (
+    <div className="flex flex-col h-full max-w-2xl mx-auto border border-gray-200 rounded-xl overflow-hidden">
+      <div className="border-b border-gray-200 px-4 py-3 font-semibold text-gray-800">
+        AI Commerce Agent
+      </div>
 
-        <div>
-      <h1>AI Commerce Agent</h1>
+      <MessageList messages={messages} status={status} />
 
-      {messages.map((message) => (
-        <div key={message.id}>
-          <strong>{message.role}</strong>
-
-          {message.parts.map((part, index) => {
-            if (part.type === "text") {
-              return <p key={index}>{part.text}</p>;
-            }
-
-            return null;
-          })}
-        </div>
-      ))}
-      <p>status : {status}</p>
+      <ChatInput
+        onSend={(text) => sendMessage({ text })}
+        disabled={status === "streaming"}
+      />
     </div>
-)
+  );
 }
