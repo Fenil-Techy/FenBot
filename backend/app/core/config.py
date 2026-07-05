@@ -1,3 +1,4 @@
+from re import S
 from pydantic_settings import BaseSettings,SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -11,6 +12,9 @@ class Settings(BaseSettings):
     WHATSAPP_ACCESS_TOKEN: str
     WHATSAPP_VERIFY_TOKEN: str
     
+    SUPABASE_JWT_SECRET: str
+    SUPABASE_URL:str
+
     model_config=SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
