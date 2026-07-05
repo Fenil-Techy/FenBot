@@ -1,12 +1,18 @@
+from contextlib import asynccontextmanager
+from app.routes.dashboard import router as dashboard_router
 from app.routes.whatsapp import router as whatsapp_router
 from fastapi import FastAPI
 from app.routes.chat import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.logger import setup_logger
-
+from app.dependencies.database_conn import connect_db,close_db
 setup_logger()
-
-app= FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await connect_db()
+    yield
+    await close_db()
+app= FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,3 +25,4 @@ app.add_middleware(
 )
 app.include_router(chat_router)
 app.include_router(whatsapp_router)
+app.include_router(dashboard_router)
