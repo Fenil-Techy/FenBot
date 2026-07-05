@@ -3,17 +3,9 @@ from openai.types.responses import response
 import asyncpg
 from app.core.config import settings
 from openai import AsyncOpenAI
+from app.dependencies.database_conn import get_pool
 
 client=AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
-_pool:asyncpg.Pool | None = None
-
-async def get_pool():
-    global _pool
-    if _pool is None:
-        print(settings.DATABASE_URL)
-        _pool= await asyncpg.create_pool(settings.DATABASE_URL)
-    return _pool
 
 async def embed_text(text:str)->list[float]:
     response=await client.embeddings.create(
