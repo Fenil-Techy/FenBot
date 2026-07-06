@@ -1,5 +1,8 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 type MessageBubbleProps = {
-  role: "user" | "assistant" |"system";
+  role: "user" | "assistant" | "system";
   text: string;
 };
 
@@ -14,13 +17,16 @@ export function MessageBubble({ role, text }: MessageBubbleProps) {
         </div>
       )}
       <div
-        className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-          isUser
+        className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap prose prose-sm ${isUser
             ? "bg-[#1E3A5F] text-white rounded-br-md"
             : "bg-slate-100 text-slate-800 rounded-bl-md"
-        }`}
+          }`}
       >
-        {text}
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+        >
+          {text}
+        </ReactMarkdown>
       </div>
     </div>
   );
