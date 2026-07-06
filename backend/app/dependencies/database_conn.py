@@ -1,6 +1,6 @@
 import asyncpg
 from app.core.config import settings
-
+from pgvector.asyncpg import register_vector
 pool = None
 
 async def connect_db():
@@ -10,7 +10,8 @@ async def connect_db():
         pool = await asyncpg.create_pool(
             dsn=settings.DATABASE_URL,
             min_size=1,
-            max_size=5,   # keep this low for Supabase
+            max_size=5, 
+            init=register_vector,  # keep this low for Supabase
         )
 
 async def get_pool():
