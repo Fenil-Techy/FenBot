@@ -1,5 +1,320 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 @plugin "@tailwindcss/typography";
 
+/* ─────────────────────────────────────────────────────────────────
+   FENBOT DESIGN SYSTEM — globals.css
+   Tailwind v4 @theme block: all tokens consumed as Tailwind utilities
+   Architecture:
+     - shadcn semantic tokens (--background, --primary etc.) mapped to FenBot palette
+     - FenBot-specific tokens (--fen-brand, --fen-hero-canvas, etc.) for custom use
+     - Font variables wired to next/font injected CSS vars
+   ───────────────────────────────────────────────────────────────── */
 
+@theme inline {
+  /* ── Fonts ── */
+  --font-sans:    var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+  --font-mono:    var(--font-jetbrains-mono);
+  --font-heading: var(--font-space-grotesk);
 
+  /* ── Shadcn semantic → FenBot palette bridge ── */
+  --color-background:         var(--background);
+  --color-foreground:         var(--foreground);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:            var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:          var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:              var(--muted);
+  --color-muted-foreground:   var(--muted-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-foreground:  var(--accent-foreground);
+  --color-destructive:        var(--destructive);
+  --color-border:             var(--border);
+  --color-input:              var(--input);
+  --color-ring:               var(--ring);
+
+  /* ── Radius system ── */
+  --radius-sm:  calc(var(--radius) * 0.6);   /* 4px  */
+  --radius-md:  calc(var(--radius) * 0.8);   /* 6px  */
+  --radius-lg:  var(--radius);               /* 8px  */
+  --radius-xl:  calc(var(--radius) * 1.5);   /* 12px */
+  --radius-2xl: calc(var(--radius) * 2);     /* 16px */
+  --radius-3xl: calc(var(--radius) * 3);     /* 24px */
+  --radius-pill: 9999px;
+
+  /* ── FenBot spacing scale (4px base) ── */
+  --spacing-xxs:     4px;
+  --spacing-xs:      8px;
+  --spacing-sm:      12px;
+  --spacing-md:      16px;
+  --spacing-lg:      24px;
+  --spacing-xl:      32px;
+  --spacing-xxl:     48px;
+  --spacing-section: 96px;
+
+  /* ── FenBot brand tokens ── */
+  --color-brand:         var(--fen-brand);
+  --color-brand-hover:   var(--fen-brand-hover);
+  --color-brand-subtle:  var(--fen-brand-subtle);
+  --color-brand-muted:   var(--fen-brand-muted);
+
+  /* ── Dark hero zone tokens ── */
+  --color-hero-canvas:    var(--fen-hero-canvas);
+  --color-hero-surface:   var(--fen-hero-surface);
+  --color-hero-border:    var(--fen-hero-border);
+  --color-hero-ink:       var(--fen-hero-ink);
+  --color-hero-ink-muted: var(--fen-hero-ink-muted);
+
+  /* ── Light body zone tokens ── */
+  --color-canvas:         var(--fen-canvas);
+  --color-surface:        var(--fen-surface);
+  --color-surface-raised: var(--fen-surface-raised);
+  --color-ink:            var(--fen-ink);
+  --color-ink-muted:      var(--fen-ink-muted);
+  --color-ink-subtle:     var(--fen-ink-subtle);
+  --color-ink-inverse:    var(--fen-ink-inverse);
+
+  /* sidebar tokens (shadcn compat) */
+  --color-sidebar-ring:               var(--sidebar-ring);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar:                    var(--sidebar);
+  --animate-shiny-text:    shiny-text 8s infinite;
+  @keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position:    calc(-100% - var(--shiny-width)) 0;
+    }
+  30%, 60% {
+    background-position:    calc(100% + var(--shiny-width)) 0;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   :root — Light zone palette (default)
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  /* ── FenBot primitives ── */
+  --fen-brand:          #E8281E;
+  --fen-brand-hover:    #C41F16;
+  --fen-brand-subtle:   #FEF2F2;
+  --fen-brand-muted:    #FECACA;
+
+  /* Dark hero zone */
+  --fen-hero-canvas:    #0A0A0A;
+  --fen-hero-surface:   #141414;
+  --fen-hero-border:    #262626;
+  --fen-hero-ink:       #F5F5F5;
+  --fen-hero-ink-muted: #A3A3A3;
+
+  /* Light body zone */
+  --fen-canvas:         #FAFAFA;
+  --fen-surface:        #FFFFFF;
+  --fen-surface-raised: #F4F4F5;
+  --fen-ink:            #0A0A0A;
+  --fen-ink-muted:      #71717A;
+  --fen-ink-subtle:     #A1A1AA;
+  --fen-ink-inverse:    #FFFFFF;
+
+  /* ── shadcn semantic tokens → FenBot values ── */
+  --background:             #FAFAFA;
+  --foreground:             #0A0A0A;
+  --card:                   #FFFFFF;
+  --card-foreground:        #0A0A0A;
+  --popover:                #FFFFFF;
+  --popover-foreground:     #0A0A0A;
+
+  /* Primary = brand red */
+  --primary:                #E8281E;
+  --primary-foreground:     #FFFFFF;
+
+  --secondary:              #F4F4F5;
+  --secondary-foreground:   #0A0A0A;
+
+  --muted:                  #F4F4F5;
+  --muted-foreground:       #71717A;
+
+  --accent:                 #F4F4F5;
+  --accent-foreground:      #0A0A0A;
+
+  --destructive:            #E8281E;
+
+  --border:                 #E4E4E7;
+  --input:                  #E4E4E7;
+  --ring:                   #E8281E;
+
+  /* Base radius = 8px */
+  --radius: 0.5rem;
+
+  /* Sidebar (dashboard — Phase 3) */
+  --sidebar:                    #FFFFFF;
+  --sidebar-foreground:         #0A0A0A;
+  --sidebar-primary:            #E8281E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent:             #F4F4F5;
+  --sidebar-accent-foreground:  #0A0A0A;
+  --sidebar-border:             #E4E4E7;
+  --sidebar-ring:               #E8281E;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Base layer — global element defaults
+   ───────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Headings use Space Grotesk by default */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus ring — brand red */
+  :focus-visible {
+    outline: 2px solid var(--fen-brand);
+    outline-offset: 2px;
+  }
+
+  /* Code elements */
+  code, pre, kbd, samp {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.8125rem; /* 13px */
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   FenBot utility classes
+   ───────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Typography scale */
+  .text-display-xl {
+    font-family: var(--font-display), var(--font-sans);
+    font-size: 4rem;        /* 64px */
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+
+  .text-display-lg {
+    font-family: var(--font-display), var(--font-sans);
+    font-size: 3rem;        /* 48px */
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+
+  .text-display-md {
+    font-family: var(--font-display), var(--font-sans);
+    font-size: 2.25rem;     /* 36px */
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  .text-headline {
+    font-family: var(--font-display), var(--font-sans);
+    font-size: 1.5rem;      /* 24px */
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .text-body-lg {
+    font-family: var(--font-sans);
+    font-size: 1.125rem;    /* 18px */
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.005em;
+  }
+
+  .text-body {
+    font-family: var(--font-sans);
+    font-size: 1rem;        /* 16px */
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0;
+  }
+
+  .text-body-sm {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;    /* 14px */
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0;
+  }
+
+  .text-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;   /* 11px */
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .text-btn {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;    /* 14px */
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  .text-mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.8125rem;   /* 13px */
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0;
+  }
+
+  /* Hero zone helpers */
+  .hero-zone {
+    background-color: var(--fen-hero-canvas);
+    color: var(--fen-hero-ink);
+  }
+
+  /* Section spacing */
+  .section-padding {
+    padding-top: var(--spacing-section);
+    padding-bottom: var(--spacing-section);
+  }
+
+  /* Transition for chameleon navbar */
+  .nav-transition {
+    transition: background-color 300ms ease, color 300ms ease,
+                box-shadow 300ms ease, border-color 300ms ease;
+  }
+}
