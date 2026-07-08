@@ -95,7 +95,7 @@ export function HowItWorksSection() {
                 
                 <h2
                   id="build-your-agent-heading"
-                  className="text-4xl sm:text-5xl lg:text-[2.75rem] font-extrabold tracking-tight text-ink leading-tight"
+                  className="text-4xl sm:text-5xl lg:text-5xl font-extrabold tracking-tight text-ink leading-tight"
                 >
                   Build your perfect{" "}
                   <span className="text-brand block sm:inline">AI Agent in 4 steps</span>
@@ -170,71 +170,67 @@ export function HowItWorksSection() {
             <div className="pt-2">
               <button
                 onClick={() => window.location.href = "/auth/login"}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-brand hover:bg-brand-hover text-white font-bold text-sm transition-all duration-200 shadow-lg shadow-red-950/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="w-full flex items-center gap-4 sm:w-auto px-6 py-4 rounded-xl bg-brand hover:bg-brand-hover text-white font-semibold text-md transition-all duration-200 shadow-lg shadow-red-950/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
-                Build your chatbot
+                Create my chatbot
+                <ChevronRight className="text-slate-100"/>
               </button>
             </div>
           </div>
 
           {/* Right Column: Visual Mockup Viewport */}
           <div className="lg:col-span-7 w-full lg:mt-6 flex flex-col">
-            {/* Premium red brand glow border frame */}
-            <div className="bg-gradient-to-tr from-brand/5 via-brand/10 to-transparent p-6 md:p-8 rounded-[32px] border border-brand/10 shadow-xl relative w-full flex-1 flex flex-col">
+            {/* High-Fidelity Browser Shell (clean visual float) */}
+            <div className="w-full h-[470px] lg:h-auto lg:flex-1 bg-white rounded-2xl border border-slate-200/80 shadow-lg flex flex-col overflow-hidden">
               
-              {/* High-Fidelity Browser Shell */}
-              <div className="w-full h-[470px] lg:h-auto lg:flex-1 bg-white rounded-2xl border border-slate-200/80 shadow-lg flex flex-col overflow-hidden">
-                
-                {/* Top Browser Bar */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/70 shrink-0">
-                  {/* Browser window controls */}
-                  <div className="flex items-center gap-1.5 w-16">
-                    <div className="size-2.5 rounded-full bg-slate-200" />
-                    <div className="size-2.5 rounded-full bg-slate-200" />
-                    <div className="size-2.5 rounded-full bg-slate-200" />
-                  </div>
-
-                  {/* Navigation controls */}
-                  <div className="hidden sm:flex items-center gap-1.5 text-slate-350 mr-4">
-                    <ChevronLeft className="size-3.5" />
-                    <ChevronRight className="size-3.5" />
-                    <RotateCw className="size-3" />
-                  </div>
-
-                  {/* Dynamic address bar */}
-                  <div className="flex-1 max-w-sm h-6 px-3 rounded-md border border-slate-200/80 bg-white flex items-center gap-1.5 text-[10px] text-slate-400 select-none">
-                    <span className="text-emerald-500">🔒</span>
-                    <span className="text-slate-500 font-medium truncate">
-                      {currentStep === 0 && "app.fenbot.ai/train"}
-                      {currentStep === 1 && "app.fenbot.ai/customize"}
-                      {currentStep === 2 && "app.fenbot.ai/preview"}
-                      {currentStep === 3 && "app.fenbot.ai/deploy"}
-                    </span>
-                  </div>
-
-                  {/* Spacer to balance */}
-                  <div className="w-16 hidden sm:block" />
+              {/* Top Browser Bar */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/70 shrink-0">
+                {/* Browser window controls */}
+                <div className="flex items-center gap-1.5 w-16">
+                  <div className="size-2.5 rounded-full bg-slate-200" />
+                  <div className="size-2.5 rounded-full bg-slate-200" />
+                  <div className="size-2.5 rounded-full bg-slate-200" />
                 </div>
 
-                {/* Mockup viewport container (fixed scrollable height) */}
-                <div className="flex-1 p-6 overflow-y-auto bg-white min-h-0 scrollbar-none relative">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentStep}
-                      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.98, y: -8 }}
-                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      className="w-full h-full"
-                    >
-                      {currentStep === 0 && <ImportMockup />}
-                      {currentStep === 1 && <CustomizeMockup />}
-                      {currentStep === 2 && <LivePreviewMockup />}
-                      {currentStep === 3 && <DeployMockup />}
-                    </motion.div>
-                  </AnimatePresence>
+                {/* Navigation controls */}
+                <div className="hidden sm:flex items-center gap-1.5 text-slate-350 mr-4">
+                  <ChevronLeft className="size-3.5" />
+                  <ChevronRight className="size-3.5" />
+                  <RotateCw className="size-3" />
                 </div>
 
+                {/* Dynamic address bar */}
+                <div className="flex-1 max-w-sm h-6 px-3 rounded-md border border-slate-200/80 bg-white flex items-center gap-1.5 text-[10px] text-slate-400 select-none">
+                  <span className="text-emerald-500">🔒</span>
+                  <span className="text-slate-500 font-medium truncate">
+                    {currentStep === 0 && "app.fenbot.ai/train"}
+                    {currentStep === 1 && "app.fenbot.ai/customize"}
+                    {currentStep === 2 && "app.fenbot.ai/preview"}
+                    {currentStep === 3 && "app.fenbot.ai/deploy"}
+                  </span>
+                </div>
+
+                {/* Spacer to balance */}
+                <div className="w-16 hidden sm:block" />
+              </div>
+
+              {/* Mockup viewport container (fixed scrollable height) */}
+              <div className="flex-1 p-6 overflow-y-auto bg-white min-h-0 scrollbar-none relative">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, scale: 0.98, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -8 }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full h-full"
+                  >
+                    {currentStep === 0 && <ImportMockup />}
+                    {currentStep === 1 && <CustomizeMockup />}
+                    {currentStep === 2 && <LivePreviewMockup />}
+                    {currentStep === 3 && <DeployMockup />}
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
             </div>
