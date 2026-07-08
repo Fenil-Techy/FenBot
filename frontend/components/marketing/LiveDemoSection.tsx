@@ -1,10 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { BorderBeam } from "@/components/ui/border-beam";
-import { Skeleton } from "@/components/ui/skeleton";
-import WidgetContent from "@/app/widget/WidgetContent";
 import { MessageSquare, Shield, Zap } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────
@@ -64,18 +61,11 @@ export function LiveDemoSection() {
           <BlurFade delay={0.2} inView>
             <div className="relative mx-auto max-w-sm lg:max-w-none">
               <div className="relative rounded-2xl overflow-hidden border border-[#E4E4E7] shadow-xl shadow-black/8 bg-white min-h-[520px]">
-                <Suspense
-                  fallback={
-                    <div className="p-6 flex flex-col gap-4">
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-8 w-3/4" />
-                      <Skeleton className="h-8 w-1/2" />
-                      <Skeleton className="h-24 w-full" />
-                    </div>
-                  }
-                >
-                  <WidgetContent />
-                </Suspense>
+                <iframe
+                  src="/widget?key=fb_OOto07DXTQDBSHFUnvvokcpUp8tYIUsrjOOwSt4zEJo"
+                  className="w-full min-h-[520px] border-none block"
+                  title="FenBot Live Demo"
+                />
                 <BorderBeam
                   size={160}
                   duration={10}
