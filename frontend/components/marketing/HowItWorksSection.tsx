@@ -1,216 +1,247 @@
 "use client";
 
-import { useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { AnimatedBeam } from "@/components/ui/animated-beam";
-import { cn } from "@/lib/utils";
-import { FileText, Cpu, Globe } from "lucide-react";
+import { FileText, Cpu, Eye, Globe, ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
+import { ImportMockup } from "@/components/marketing/how-it-works/ImportMockup";
+import { CustomizeMockup } from "@/components/marketing/how-it-works/CustomizeMockup";
+import { LivePreviewMockup } from "@/components/marketing/how-it-works/LivePreviewMockup";
+import { DeployMockup } from "@/components/marketing/how-it-works/DeployMockup";
+import { motion, AnimatePresence } from "motion/react";
 
-// ─────────────────────────────────────────────────────────────────
-// Step data
-// ─────────────────────────────────────────────────────────────────
-
-type Step = {
-  id: string;
+type WalkthroughStep = {
+  id: number;
   number: string;
-  icon: React.ElementType;
   title: string;
   body: string;
-  detail: string | null;
-  code?: string;
+  icon: React.ElementType;
 };
 
-const STEPS: Step[] = [
+const STEPS: WalkthroughStep[] = [
   {
-    id: "step-1",
+    id: 0,
     number: "01",
+    title: "Train your AI",
+    body: "Feed FenBot your website URL, PDF support guides, FAQs, or raw text. It learns your business policies instantly with zero training queues.",
     icon: FileText,
-    title: "Paste your content",
-    body: "FAQ, return policies, product descriptions, pricing. Paste as plain text — no formatting, no uploads, no training queues.",
-    detail: "Works with any text you already have.",
   },
   {
-    id: "step-2",
+    id: 1,
     number: "02",
+    title: "Customize",
+    body: "Customize your bot's system prompts, Tone of Voice, instructions, and name. Fine-tune your AI agent to align with your brand guidelines.",
     icon: Cpu,
-    title: "FenBot learns it",
-    body: "Your content is chunked, embedded, and stored securely. The bot answers only from what you give it — never guesses, never invents.",
-    detail: "Grounding prevents hallucinations by design.",
   },
   {
-    id: "step-3",
+    id: 2,
     number: "03",
+    title: "Live preview",
+    body: "Test your agent inside our live preview sandbox. Ask questions and verify that answers are grounded in your data before going public.",
+    icon: Eye,
+  },
+  {
+    id: 3,
+    number: "04",
+    title: "Deploy in your website",
+    body: "Embed the live widget on any site with a single line of script tag, or connect direct messaging channels like WhatsApp Cloud API.",
     icon: Globe,
-    title: "Deploy anywhere",
-    body: "One script tag on your site. Or connect WhatsApp in 2 minutes. Your customers get answers — you get nothing to maintain.",
-    detail: null,
-    code: `<script src="https://cdn.fenbot.ai/embed.js"
-  data-key="your_api_key">
-</script>`,
   },
 ];
 
-
-// ─────────────────────────────────────────────────────────────────
-// Beam diagram — shows data flowing through FenBot engine
-// ─────────────────────────────────────────────────────────────────
-
-function BeamDiagram() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const engineRef = useRef<HTMLDivElement>(null);
-  const deployRef = useRef<HTMLDivElement>(null);
-
-  const NODE_BASE =
-    "size-14 rounded-2xl flex items-center justify-center border text-sm font-semibold shadow-sm";
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative flex items-center justify-center gap-16 py-8"
-      aria-hidden="true"
-    >
-      {/* Node: Your Content */}
-      <div className="flex flex-col items-center gap-2">
-        <div
-          ref={contentRef}
-          className={cn(NODE_BASE, "bg-[#F4F4F5] border-[#E4E4E7] text-[#0A0A0A]")}
-        >
-          <FileText className="size-6 text-[#71717A]" />
-        </div>
-        <span className="text-body-sm text-[#71717A] text-center">
-          Your content
-        </span>
-      </div>
-
-      {/* Node: FenBot Engine */}
-      <div className="flex flex-col items-center gap-2">
-        <div
-          ref={engineRef}
-          className={cn(
-            NODE_BASE,
-            "bg-[#0A0A0A] border-[#262626] text-white scale-110"
-          )}
-        >
-          <span className="text-[#E8281E] font-bold text-base">F</span>
-        </div>
-        <span className="text-body-sm text-[#71717A] text-center">
-          FenBot
-        </span>
-      </div>
-
-      {/* Node: Your Site */}
-      <div className="flex flex-col items-center gap-2">
-        <div
-          ref={deployRef}
-          className={cn(NODE_BASE, "bg-[#F4F4F5] border-[#E4E4E7] text-[#0A0A0A]")}
-        >
-          <Globe className="size-6 text-[#71717A]" />
-        </div>
-        <span className="text-body-sm text-[#71717A] text-center">
-          Your site
-        </span>
-      </div>
-
-      {/* Animated beams */}
-      <AnimatedBeam
-        containerRef={containerRef}
-        fromRef={contentRef}
-        toRef={engineRef}
-        gradientStartColor="#E8281E"
-        gradientStopColor="#FF6B5A"
-        pathColor="#E4E4E7"
-        pathWidth={1.5}
-        duration={4}
-      />
-      <AnimatedBeam
-        containerRef={containerRef}
-        fromRef={engineRef}
-        toRef={deployRef}
-        gradientStartColor="#E8281E"
-        gradientStopColor="#FF6B5A"
-        pathColor="#E4E4E7"
-        pathWidth={1.5}
-        duration={4}
-        delay={0.5}
-      />
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────
-// HowItWorksSection
-// ─────────────────────────────────────────────────────────────────
-
 export function HowItWorksSection() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+
+  // Auto-slideshow step changes
+  useEffect(() => {
+    if (!autoPlay) return;
+    const timer = setTimeout(() => {
+      setCurrentStep((prev) => (prev + 1) % STEPS.length);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [currentStep, autoPlay]);
+
+  const handleStepClick = (id: number) => {
+    setCurrentStep(id);
+    setAutoPlay(false); // Stop autoplay when a step is manually clicked
+  };
+
   return (
     <section
-      id="how-it-works"
-      aria-labelledby="how-it-works-heading"
-      className="bg-[#FAFAFA] section-padding"
+      id="build-your-agent"
+      aria-labelledby="build-your-agent-heading"
+      className="bg-canvas pb-28 md:pb-40"
+      style={{ paddingTop: 'calc(var(--spacing-section, 5rem) + 180px)' }}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <BlurFade delay={0.1} inView>
-          <div className="text-center mb-16">
-            <p className="text-eyebrow text-[#E8281E] mb-3">How it works</p>
-            <h2
-              id="how-it-works-heading"
-              className="text-display-lg text-[#0A0A0A]"
-            >
-              Zero setup.{" "}
-              <span className="text-[#71717A]">Zero guessing.</span>
-            </h2>
-          </div>
-        </BlurFade>
+      {/* CSS Keyframe definition for smooth, hardware-accelerated progress animation */}
+      <style>{`
+        @keyframes progressFill {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+      `}</style>
 
-        {/* Beam diagram */}
-        <BlurFade delay={0.2} inView>
-          <div className="max-w-lg mx-auto mb-16">
-            <BeamDiagram />
-          </div>
-        </BlurFade>
+      {/* Single BlurFade for the entire section content */}
+      <BlurFade delay={0.1} inView className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
+        {/* Two-column layout */}
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 lg:items-stretch items-start">
+          
+          {/* Left Column: Header + Vertical Step Selector + CTA */}
+          <div className="lg:col-span-5 flex flex-col justify-between gap-8">
+            <div className="flex flex-col gap-6">
+              {/* Left-aligned Header above the steps list */}
+              <div className="text-left">
+                
+                <h2
+                  id="build-your-agent-heading"
+                  className="text-4xl sm:text-5xl lg:text-[2.75rem] font-extrabold tracking-tight text-ink leading-tight"
+                >
+                  Build your perfect{" "}
+                  <span className="text-brand block sm:inline">AI Agent in 4 steps</span>
+                </h2>
+              </div>
 
-        {/* Steps */}
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-          {STEPS.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <BlurFade key={step.id} delay={0.15 * (i + 1)} inView>
-                <article className="flex flex-col gap-4">
-                  {/* Step number + icon */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-eyebrow text-[#E8281E]">
-                      {step.number}
-                    </span>
-                    <div className="h-px flex-1 bg-[#E4E4E7]" />
-                    <div className="size-9 rounded-xl bg-[#F4F4F5] border border-[#E4E4E7] flex items-center justify-center">
-                      <Icon className="size-4 text-[#71717A]" />
-                    </div>
+              {/* Steps list */}
+              <div className="space-y-3">
+                {STEPS.map((step) => {
+                  const isActive = currentStep === step.id;
+                  const Icon = step.icon;
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={() => handleStepClick(step.id)}
+                      className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden focus:outline-none cursor-pointer flex flex-col gap-2 ${
+                        isActive
+                          ? "bg-white border-brand/20 shadow-md shadow-red-900/5"
+                          : "bg-white/50 border-slate-200/60 hover:bg-white/80 hover:border-slate-300/60"
+                      }`}
+                    >
+                      {/* Badge + Big Title + Icon on a single row */}
+                      <div className="flex items-center gap-4 w-full">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            isActive ? "bg-brand text-white" : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          Step {step.number}
+                        </span>
+                        
+                        <h3 className={`text-lg font-bold sm:text-xl ${isActive ? "text-slate-800" : "text-slate-500"} flex-1`}>
+                          {step.title}
+                        </h3>
+                        
+                        <Icon className={`size-5 ${isActive ? "text-brand" : "text-slate-400"}`} />
+                      </div>
+
+                      {/* Body description with smooth height expand animation */}
+                      <AnimatePresence initial={false}>
+                        {isActive && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            className="overflow-hidden w-full"
+                          >
+                            <p className="text-sm text-slate-500 leading-relaxed pl-2 pb-1">
+                              {step.body}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Progress bar on active tab */}
+                      {isActive && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100">
+                          <div
+                            key={currentStep}
+                            className={`h-full bg-brand ${autoPlay ? "animate-progress-fill" : "w-full"}`}
+                          />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Left Column Call-To-Action (aligns height with the right column) */}
+            <div className="pt-2">
+              <button
+                onClick={() => window.location.href = "/auth/login"}
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-brand hover:bg-brand-hover text-white font-bold text-sm transition-all duration-200 shadow-lg shadow-red-950/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              >
+                Build your chatbot
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Visual Mockup Viewport */}
+          <div className="lg:col-span-7 w-full lg:mt-6 flex flex-col">
+            {/* Premium red brand glow border frame */}
+            <div className="bg-gradient-to-tr from-brand/5 via-brand/10 to-transparent p-6 md:p-8 rounded-[32px] border border-brand/10 shadow-xl relative w-full flex-1 flex flex-col">
+              
+              {/* High-Fidelity Browser Shell */}
+              <div className="w-full h-[470px] lg:h-auto lg:flex-1 bg-white rounded-2xl border border-slate-200/80 shadow-lg flex flex-col overflow-hidden">
+                
+                {/* Top Browser Bar */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/70 shrink-0">
+                  {/* Browser window controls */}
+                  <div className="flex items-center gap-1.5 w-16">
+                    <div className="size-2.5 rounded-full bg-slate-200" />
+                    <div className="size-2.5 rounded-full bg-slate-200" />
+                    <div className="size-2.5 rounded-full bg-slate-200" />
                   </div>
 
-                  {/* Content */}
-                  <h3 className="text-headline text-[#0A0A0A]">{step.title}</h3>
-                  <p className="text-body text-[#71717A] leading-relaxed">
-                    {step.body}
-                  </p>
+                  {/* Navigation controls */}
+                  <div className="hidden sm:flex items-center gap-1.5 text-slate-350 mr-4">
+                    <ChevronLeft className="size-3.5" />
+                    <ChevronRight className="size-3.5" />
+                    <RotateCw className="size-3" />
+                  </div>
 
-                  {step.detail && (
-                    <p className="text-body-sm text-[#A1A1AA]">{step.detail}</p>
-                  )}
+                  {/* Dynamic address bar */}
+                  <div className="flex-1 max-w-sm h-6 px-3 rounded-md border border-slate-200/80 bg-white flex items-center gap-1.5 text-[10px] text-slate-400 select-none">
+                    <span className="text-emerald-500">🔒</span>
+                    <span className="text-slate-500 font-medium truncate">
+                      {currentStep === 0 && "app.fenbot.ai/train"}
+                      {currentStep === 1 && "app.fenbot.ai/customize"}
+                      {currentStep === 2 && "app.fenbot.ai/preview"}
+                      {currentStep === 3 && "app.fenbot.ai/deploy"}
+                    </span>
+                  </div>
 
-                  {/* Code snippet for step 3 */}
-                  {step.code && (
-                    <pre className="text-mono bg-[#0A0A0A] text-[#A3A3A3] rounded-xl p-4 overflow-x-auto border border-[#262626] mt-1">
-                      <code>{step.code}</code>
-                    </pre>
-                  )}
-                </article>
-              </BlurFade>
-            );
-          })}
+                  {/* Spacer to balance */}
+                  <div className="w-16 hidden sm:block" />
+                </div>
+
+                {/* Mockup viewport container (fixed scrollable height) */}
+                <div className="flex-1 p-6 overflow-y-auto bg-white min-h-0 scrollbar-none relative">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStep}
+                      initial={{ opacity: 0, scale: 0.98, y: 8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98, y: -8 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="w-full h-full"
+                    >
+                      {currentStep === 0 && <ImportMockup />}
+                      {currentStep === 1 && <CustomizeMockup />}
+                      {currentStep === 2 && <LivePreviewMockup />}
+                      {currentStep === 3 && <DeployMockup />}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
         </div>
-      </div>
+      </BlurFade>
     </section>
   );
 }
