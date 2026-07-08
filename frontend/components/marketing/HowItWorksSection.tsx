@@ -111,7 +111,7 @@ export function HowItWorksSection() {
                     <button
                       key={step.id}
                       onClick={() => handleStepClick(step.id)}
-                      className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden focus:outline-none cursor-pointer flex flex-col gap-2 ${
+                      className={`w-full text-left p-4 sm:p-5 rounded-2xl border transition-[background-color,border-color,box-shadow] duration-300 relative overflow-hidden focus:outline-none cursor-pointer flex flex-col ${
                         isActive
                           ? "bg-white border-brand/20 shadow-md shadow-red-900/5"
                           : "bg-white/50 border-slate-200/60 hover:bg-white/80 hover:border-slate-300/60"
@@ -144,7 +144,7 @@ export function HowItWorksSection() {
                             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                             className="overflow-hidden w-full"
                           >
-                            <p className="text-sm text-slate-500 leading-relaxed pl-2 pb-1">
+                            <p className="text-sm text-slate-500 leading-relaxed pl-2 pt-2.5 pb-1">
                               {step.body}
                             </p>
                           </motion.div>
