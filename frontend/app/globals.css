@@ -311,10 +311,42 @@
     padding-top: var(--spacing-section);
     padding-bottom: var(--spacing-section);
   }
-
   /* Transition for chameleon navbar */
   .nav-transition {
     transition: background-color 300ms ease, color 300ms ease,
                 box-shadow 300ms ease, border-color 300ms ease;
+  }
+
+}
+
+@theme inline {
+  --animate-shiny-text: shiny-text 8s infinite;
+
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Progress Bar Animation (compiled as raw global CSS)
+   ───────────────────────────────────────────────────────────────── */
+.animate-progress-fill {
+  animation: progressFill 6000ms linear forwards;
+}
+
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
   }
 }
