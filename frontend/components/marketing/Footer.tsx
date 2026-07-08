@@ -49,11 +49,18 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
-              className="inline-flex items-center gap-0.5 font-display text-lg font-bold mb-3"
+              className="inline-flex items-center gap-2 font-display text-lg font-bold mb-3"
               aria-label="FenBot home"
             >
-              <span className="text-[#F5F5F5]">Fen</span>
-              <span className="text-[#E8281E]">Bot</span>
+              <img
+                src="/logo/apple-touch-icon.png"
+                alt=""
+                className="h-5 w-auto rotate-[15deg]"
+              />
+              <div className="flex items-center gap-0.5">
+                <span className="text-[#F5F5F5]">Fen</span>
+                <span className="text-[#E8281E]">Bot</span>
+              </div>
             </Link>
             <p className="text-body-sm text-[#4A4A4A] max-w-xs leading-relaxed">
               AI customer support grounded in your real business data. No
