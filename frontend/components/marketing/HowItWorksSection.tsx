@@ -169,7 +169,7 @@ export function HowItWorksSection() {
             {/* Left Column Call-To-Action (aligns height with the right column) */}
             <div className="pt-2">
               <button
-                onClick={() => window.location.href = "/auth/login"}
+                onClick={() => window.location.href = "/auth/signup"}
                 className="w-full flex items-center gap-4 sm:w-auto px-6 py-4 rounded-xl bg-brand hover:bg-brand-hover text-white font-semibold text-md transition-all duration-200 shadow-lg shadow-red-950/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 Create my chatbot

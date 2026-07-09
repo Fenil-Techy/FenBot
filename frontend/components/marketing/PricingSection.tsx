@@ -20,7 +20,7 @@ const PLANS = [
     yearlyPrice: 0,
     description: "Try FenBot on your site. No credit card.",
     cta: "Get started free",
-    ctaHref: "/auth/login",
+    ctaHref: "/auth/signup",
     featured: false,
     features: [
       "1 bot",
@@ -38,7 +38,7 @@ const PLANS = [
     yearlyPrice: 24,
     description: "For active stores that need full automation.",
     cta: "Start Pro free",
-    ctaHref: "/auth/login",
+    ctaHref: "/auth/signup",
     featured: true,
     features: [
       "1 bot",

@@ -149,19 +149,19 @@ export function Navbar({ zone = "light" }: NavbarProps) {
           <Link
             href="/auth/login"
             className={cn(
-              "hidden sm:inline-block text-sm font-semibold px-4 py-2 rounded-lg nav-transition",
+              "hidden sm:inline-block text-sm font-semibold px-4 py-2 rounded-lg nav-transition border",
               isDark
-                ? "text-white/80 hover:text-white hover:bg-white/10"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                ? "text-white/80 border-slate-200 hover:text-white hover:bg-white/10"
+                : "text-slate-600 border-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
             )}
           >
-            Sign in
+            Log in
           </Link>
           <Link
-            href="/auth/login"
+            href="/auth/signup"
             className="text-sm font-bold px-5 py-2.5 rounded-xl bg-[#E8281E] text-white hover:bg-[#C41F16] nav-transition shadow-sm shadow-red-900/20 hover:shadow-md hover:shadow-red-900/25 hover:scale-[1.02] active:scale-[0.98]"
           >
-            Start for free →
+            Start for free
           </Link>
         </div>
 

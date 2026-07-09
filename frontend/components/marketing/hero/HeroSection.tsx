@@ -97,7 +97,8 @@ export function HeroSection({ sectionRef }: HeroSectionProps) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              window.location.href = "/auth/login";
+              const emailInput = e.currentTarget.querySelector('input[type="email"]') as HTMLInputElement;
+              window.location.href = `/auth/signup?email=${encodeURIComponent(emailInput?.value || "")}`;
             }}
             className="flex flex-row gap-xs w-full mb-sm"
           >

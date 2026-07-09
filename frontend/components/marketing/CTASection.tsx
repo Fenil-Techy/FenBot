@@ -54,7 +54,7 @@ export function CTASection() {
                 No guessing.
               </p>
               <Link
-                href="/auth/login"
+                href="/auth/signup"
                 id="final-cta"
                 className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-lg bg-[#E8281E] text-white hover:bg-[#C41F16] transition-colors text-base font-semibold mt-2"
               >
