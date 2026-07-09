@@ -41,7 +41,7 @@ export default function SignupPage() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (err: any) {
       setError(err?.message || "An unexpected error occurred. Please try again.");
       setLoading(false);

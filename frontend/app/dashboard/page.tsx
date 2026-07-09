@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardPage() {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [keys, setKeys] = useState<any[]>([]);
+  const router = useRouter();
   const supabase = createClient();
 
   const getToken = async () => {
@@ -32,6 +34,13 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const completed = localStorage.getItem("onboarding_completed");
+      if (!completed) {
+        router.push("/onboarding");
+        return;
+      }
+    }
     loadKeys();
   }, []);
 

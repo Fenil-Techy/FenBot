@@ -200,7 +200,7 @@ export function HowItWorksSection() {
                 </div>
 
                 {/* Dynamic address bar */}
-                <div className="flex-1 max-w-sm h-6 px-3 rounded-md border border-slate-200/80 bg-white flex items-center gap-1.5 text-[10px] text-slate-400 select-none">
+                <div className="flex-1 max-w-[360px] h-6 px-3 rounded-md border border-slate-200/80 bg-white flex items-center gap-1.5 text-[10px] text-slate-400 select-none">
                   <span className="text-emerald-500">🔒</span>
                   <span className="text-slate-500 font-medium truncate">
                     {currentStep === 0 && "app.fenbot.ai/train"}
