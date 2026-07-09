@@ -5,7 +5,7 @@ import { Navbar } from "@/components/marketing/Navbar";
 import { HeroSection } from "@/components/marketing/hero/HeroSection";
 import { HowItWorksSection } from "@/components/marketing/HowItWorksSection";
 import { FeaturesSection } from "@/components/marketing/FeaturesSection";
-import { LiveDemoSection } from "@/components/marketing/LiveDemoSection";
+import { ForWhomSection } from "@/components/marketing/ForWhomSection";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { Footer } from "@/components/marketing/Footer";
@@ -49,7 +49,7 @@ export default function LandingPage() {
       {/* Light zone sections */}
       <HowItWorksSection />
       <FeaturesSection />
-      <LiveDemoSection />
+      <ForWhomSection />
       <PricingSection />
       <CTASection />
 
