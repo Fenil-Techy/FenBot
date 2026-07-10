@@ -11,12 +11,12 @@ logger=logging.getLogger(__name__)
 
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
-async def generate(messages:list,*,system_prompt_template=SYSTEM_PROMPT_TEMPLATE,model="gpt-4o-mini",client_id:str="default",**kwargs):
+async def generate(messages:list,*,chatbot_id:str,persona:str,model="gpt-4o-mini",**kwargs):
     last_message=messages[-1]["content"]
-    retrieved=await retrieve(last_message,client_id=client_id)
+    retrieved=await retrieve(last_message,chatbot_id=chatbot_id)
     logger.debug(retrieved)
     context="\n".join(f"-{chunk}" for chunk in retrieved) or "no relevant context found"
-    system_prompt=system_prompt_template.format(context=context)
+    system_prompt = f"{persona}\n\nContext:\n{context}"
     full_input=[{"role":"system","content":system_prompt},*messages]
     logger.debug(full_input)
     response= await client.responses.create(

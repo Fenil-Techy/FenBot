@@ -31,27 +31,21 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
 
 async def retrieve(
     query: str,
-    client_id: str = "default",
+    chatbot_id: str,
     top_k: int = 2,
 ) -> list[str]:
 
     query_embedding = await embed_text(query)
-
     pool = await get_pool()
-
     async with pool.acquire() as conn:
-
         rows = await conn.fetch(
             """
             SELECT content
             FROM documents
-            WHERE client_id = $1
+            WHERE chatbot_id = $1
             ORDER BY embedding <=> $2
             LIMIT $3
             """,
-            client_id,
-            query_embedding,
-            top_k,
+            chatbot_id, query_embedding, top_k
         )
-
     return [row["content"] for row in rows]
