@@ -10,7 +10,7 @@ import { ChatWidget } from "@/app/widget/components/ChatWidget";
  */
 export default function WidgetContent() {
   const params = useSearchParams();
-  const apiKey = params.get("key") ?? "fb_OOto07DXTQDBSHFUnvvokcpUp8tYIUsrjOOwSt4zEJo";
+  const apiKey = params.get("bot") ?? "df03b410-e5be-4246-9a40-ce56588bacd3";
 
   if (!apiKey) {
     return (
@@ -21,5 +21,5 @@ export default function WidgetContent() {
     );
   }
 
-  return <ChatWidget apiKey="fb_OOto07DXTQDBSHFUnvvokcpUp8tYIUsrjOOwSt4zEJo" />;
+  return <ChatWidget chatbot_id="df03b410-e5be-4246-9a40-ce56588bacd3" />;
 }

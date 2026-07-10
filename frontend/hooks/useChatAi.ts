@@ -1,13 +1,10 @@
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 
-export function useChatAi(apiKey: string) {
+export function useChatAi(chatbot_id: string) {
   return useChat({
     transport: new TextStreamChatTransport({
-      api: "http://localhost:8000/chat",
-      headers: {
-        "X-Api-Key": apiKey,
-      }
+      api: `http://localhost:8000/chat/${chatbot_id}`
     })
   });
 }

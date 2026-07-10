@@ -6,9 +6,9 @@ import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 
 
-export function ChatWidget({ apiKey }: { apiKey: string }) {
+export function ChatWidget({ chatbot_id }: { chatbot_id: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, sendMessage, status } = useChatAi(apiKey);
+  const { messages, sendMessage, status } = useChatAi(chatbot_id);
 
   useEffect(()=>{
     window.parent.postMessage(

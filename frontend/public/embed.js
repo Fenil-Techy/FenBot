@@ -1,14 +1,14 @@
 (function () {
     var script = document.currentScript;
-    var apiKey = script.getAttribute("data-api-key");
+    var bot_id = script.getAttribute("data-bot-id");
     var widgetOrigin = "http://localhost:3000"
-    if (!apiKey) {
-        console.error("FenBot: missing data-api-key on embed script tag");
+    if (!bot_id) {
+        console.error("FenBot: missing data-bot-id on embed script tag");
         return;
     }
 
     var iframe = document.createElement("iframe");
-    iframe.src = widgetOrigin + "/widget?key=" + encodeURIComponent(apiKey);
+    iframe.src = widgetOrigin + "/widget?bot=" + encodeURIComponent(bot_id);
     iframe.style.position = "fixed";
     iframe.style.bottom = "0";
     iframe.style.right = "0";

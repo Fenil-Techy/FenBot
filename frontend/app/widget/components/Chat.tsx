@@ -3,8 +3,8 @@ import { useChatAi } from "@/hooks/useChatAi";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 
-export function Chat({ apiKey }: { apiKey: string }) {
-  const { messages, sendMessage, status } = useChatAi(apiKey);
+export function Chat({ chatbot_id }: { chatbot_id: string }) {
+  const { messages, sendMessage, status } = useChatAi(chatbot_id);
 
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto border border-gray-200 rounded-xl overflow-hidden">
