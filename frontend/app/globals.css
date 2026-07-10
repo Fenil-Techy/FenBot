@@ -169,6 +169,61 @@
   --sidebar-ring:               #E8281E;
 }
 
+/* Scoped Dashboard Dark Palette */
+.dashboard-dark {
+  /* Redefine semantic tokens for dark mode */
+  --background: #0B0B0C;
+  --foreground: #F5F5F5;
+  
+  --card: #16181D;
+  --card-foreground: #F5F5F5;
+  
+  --popover: #16181D;
+  --popover-foreground: #F5F5F5;
+  
+  --primary: #E8281E; /* brand red */
+  --primary-foreground: #FFFFFF;
+  
+  --secondary: #252932; /* active item bg / secondary button */
+  --secondary-foreground: #F5F5F5;
+  
+  --muted: #1D2026; /* hover */
+  --muted-foreground: #8B919D;
+  
+  --accent: #1D2026; /* hover */
+  --accent-foreground: #F5F5F5;
+  
+  --border: #2A2E36;
+  --input: #20232A;
+  --ring: #E8281E;
+
+  /* Sidebar styling */
+  --sidebar: #101113;
+  --sidebar-foreground: #B4BAC5;
+  --sidebar-primary: #E8281E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1D2026;
+  --sidebar-accent-foreground: #F5F5F5;
+  --sidebar-border: #20232A;
+  --sidebar-ring: #E8281E;
+
+  /* FenBot specific custom properties */
+  --fen-brand: #E8281E;
+  --fen-brand-hover: #C41F16;
+  --fen-canvas: #0B0B0C;
+  --fen-surface: #16181D;
+  --fen-ink: #F5F5F5;
+  --fen-ink-muted: #B4BAC5;
+  --fen-ink-subtle: #8B919D;
+
+  /* Custom divider and soft border */
+  --divider: #24262D;
+  --border-soft: #20232A;
+
+  color-scheme: dark;
+}
+
+
 /* ─────────────────────────────────────────────────────────────────
    Base layer — global element defaults
    ───────────────────────────────────────────────────────────────── */
@@ -317,6 +372,37 @@
                 box-shadow 300ms ease, border-color 300ms ease;
   }
 
+  /* Dashboard specific utility classes */
+  .text-metric {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .text-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .text-card-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .dashboard-card {
+    background-color: var(--card);
+    border: 1px solid #262A32;
+    border-radius: 16px;
+    padding: 24px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+
+  .dashboard-card:hover {
+    background-color: #1D2026;
+    border-color: #2A2E36;
+  }
 }
 
 @theme inline {

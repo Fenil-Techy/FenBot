@@ -109,6 +109,14 @@ export const layout = {
   sectionPx: "px-4 sm:px-6 lg:px-8",
   /** Navbar height in px — used for scroll offset calculations */
   navbarHeight: 64,
+  
+  /* Dashboard layout constants */
+  sidebarWidth: 260,
+  topNavHeight: 64,
+  contentMaxWidth: 1600,
+  contentPadding: 32,
+  sectionGap: 24,
+  cardPadding: 24,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────
