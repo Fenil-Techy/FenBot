@@ -16,10 +16,10 @@ export default function WidgetContent() {
     return (
       <div className="p-4 text-sm" style={{ color: "var(--color-error)" }}>
         Missing API key. Embed the widget with{" "}
-        <code>?key=your_api_key</code> in the URL.
+        <code>?bot=your_api_key</code> in the URL.
       </div>
     );
   }
 
-  return <ChatWidget chatbot_id="df03b410-e5be-4246-9a40-ce56588bacd3" />;
+  return <ChatWidget chatbot_id={apiKey} />;
 }

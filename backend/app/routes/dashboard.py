@@ -24,7 +24,7 @@ async def create_chatbot(payload: dict, owner_id: str = Depends(get_current_owne
     async with pool.acquire() as conn:
         client_id = await _get_client_id(owner_id, conn)
         row = await conn.fetchrow(
-            "INSERT INTO chatbots (client_id, name) VALUES ($1, $2) RETURNING id, name, persona, brand_color, status, created_at",
+            "INSERT INTO chatbots (client_id, name) VALUES ($1, $2) RETURNING id, name, persona, welcome_message,tone,language,input_placeholder,bubble_color,header_color,accent_color, status, created_at",
             client_id, name
         )
     return dict(row)
@@ -35,10 +35,23 @@ async def list_chatbots(owner_id: str = Depends(get_current_owner_id)):
     async with pool.acquire() as conn:
         client_id = await _get_client_id(owner_id, conn)
         rows = await conn.fetch(
-            "SELECT id, name, persona, brand_color, status, created_at FROM chatbots WHERE client_id = $1 ORDER BY created_at DESC",
+            "SELECT id, name, persona, welcome_message,tone,language,input_placeholder,bubble_color,header_color,accent_color, status, created_at FROM chatbots WHERE client_id = $1 ORDER BY created_at DESC",
             client_id
         )
     return [dict(r) for r in rows]
+
+@router.get("/chatbots/{chatbot_id}")
+async def get_chatbot(chatbot_id: str, owner_id: str = Depends(get_current_owner_id)):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        client_id = await _get_client_id(owner_id, conn)
+        row = await conn.fetchrow(
+            "SELECT id, name, persona, welcome_message, tone, language, input_placeholder, bubble_color, header_color, accent_color, status, created_at FROM chatbots WHERE id = $1 AND client_id = $2",
+            chatbot_id, client_id
+        )
+        if not row:
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+    return dict(row)
 
 @router.patch("/chatbots/{chatbot_id}")
 async def update_chatbot(chatbot_id: str, payload: dict, owner_id: str = Depends(get_current_owner_id)):
@@ -52,7 +65,7 @@ async def update_chatbot(chatbot_id: str, payload: dict, owner_id: str = Depends
             raise HTTPException(status_code=404, detail="Chatbot not found")
 
         fields, values = [], []
-        for key in ["name", "persona", "brand_color", "status"]:
+        for key in ["name", "persona", "welcome_message", "tone", "language", "input_placeholder", "bubble_color", "header_color", "accent_color", "status"]:
             if key in payload:
                 values.append(payload[key])
                 fields.append(f"{key} = ${len(values)}")
@@ -141,31 +154,20 @@ async def list_documents(
         )
     return [dict(r) for r in rows]
 
-# @router.delete("/documents/{doc_id}")
-# async def delete_document(
-#     chatbot_id:str,
-#     doc_id: str,
-#     owner_id: str = Depends(get_current_owner_id),
-# ):
-#     pool = await get_pool()
 
-#     async with pool.acquire() as conn:
-        
-
-#         result = await conn.execute(
-#             """
-#             DELETE FROM documents
-#             WHERE id = $1
-#             AND client_id = $2
-#             """,
-#             doc_id,
-#             client_id,
-#         )
-
-#     if result == "DELETE 0":
-#         raise HTTPException(
-#             status_code=404,
-#             detail="Document not found",
-#         )
-
-#     return {"deleted": True}
+@router.delete("/chatbots/{chatbot_id}/documents/{doc_id}")
+async def delete_document(chatbot_id: str, doc_id: str, owner_id: str = Depends(get_current_owner_id)):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        client_id = await _get_client_id(owner_id, conn)
+        owned = await conn.fetchrow(
+            "SELECT id FROM chatbots WHERE id = $1 AND client_id = $2", chatbot_id, client_id
+        )
+        if not owned:
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+        result = await conn.execute(
+            "DELETE FROM documents WHERE id = $1 AND chatbot_id = $2", doc_id, chatbot_id
+        )
+    if result == "DELETE 0":
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"deleted": True}

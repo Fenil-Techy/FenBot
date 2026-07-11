@@ -4,7 +4,7 @@ async def get_bot_context(chatbot_id:str)->dict:
     pool=await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, client_id, name, persona, status FROM chatbots WHERE id = $1",
+            "SELECT id, client_id, name, persona, welcome_message,tone,language,input_placeholder,bubble_color,header_color,accent_color, status, created_at FROM chatbots WHERE id = $1",
             chatbot_id
             )
     if not row:

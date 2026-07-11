@@ -5,9 +5,10 @@ import { UIMessage } from "ai";
 type MessageListProps = {
   messages: UIMessage[];
   status: string;
+  welcomeMessage?: string;
 };
 
-export function MessageList({ messages, status }: MessageListProps) {
+export function MessageList({ messages, status, welcomeMessage }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,8 +19,8 @@ export function MessageList({ messages, status }: MessageListProps) {
     <div className="flex-1 overflow-y-auto px-4 py-4 bg-[#F8FAFC]">
       {messages.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center text-center px-6">
-          <p className="text-slate-400 text-sm">
-            👋 Hi! Ask me anything about your order, shipping, or returns.
+          <p className="text-slate-400 text-sm whitespace-pre-wrap">
+            {welcomeMessage || "👋 Hi! Ask me anything about your order, shipping, or returns."}
           </p>
         </div>
       )}
