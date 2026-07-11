@@ -16,31 +16,55 @@ async def _get_client_id(owner_id:str,conn)->str:
         raise HTTPException(status_code=404,detail="Client not found")
     return str(row["id"])
 
-# @router.post("/api-keys")
-# async def create_api_key(owner_id:str=Depends(get_current_owner_id)):
-#     pool=await get_pool()
-#     async with pool.acquire() as conn:
-#         client=await _get_client_id(owner_id,conn)
-#         raw_key,hash_key,prefix=generate_api_key()
-#         await conn.execute(
-#             """insert into api_keys(client_id,key_hash,key_prefix) values($1,$2,$3)""",
-#             client,
-#             hash_key,
-#             prefix
-#         )
-#         print(raw_key)
-#         return {"raw_key":raw_key,"prefix":prefix}
+@router.post("/chatbots")
+async def create_chatbot(payload: dict, owner_id: str = Depends(get_current_owner_id)):
+    name = payload.get("name", "My Chatbot").strip() or "My Chatbot"
 
-# @router.get("/api-keys")
-# async def get_all_api_keys(owner_id:str=Depends(get_current_owner_id)):
-#     pool=await get_pool()
-#     async with pool.acquire() as conn:
-#         client=await _get_client_id(owner_id,conn)
-#         rows=await conn.fetch(
-#             "SELECT key_prefix,created_at,revoked FROM api_keys WHERE client_id=$1",
-#             client
-#         )
-#     return [dict(row) for row in rows]
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        client_id = await _get_client_id(owner_id, conn)
+        row = await conn.fetchrow(
+            "INSERT INTO chatbots (client_id, name) VALUES ($1, $2) RETURNING id, name, persona, brand_color, status, created_at",
+            client_id, name
+        )
+    return dict(row)
+
+@router.get("/chatbots")
+async def list_chatbots(owner_id: str = Depends(get_current_owner_id)):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        client_id = await _get_client_id(owner_id, conn)
+        rows = await conn.fetch(
+            "SELECT id, name, persona, brand_color, status, created_at FROM chatbots WHERE client_id = $1 ORDER BY created_at DESC",
+            client_id
+        )
+    return [dict(r) for r in rows]
+
+@router.patch("/chatbots/{chatbot_id}")
+async def update_chatbot(chatbot_id: str, payload: dict, owner_id: str = Depends(get_current_owner_id)):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        client_id = await _get_client_id(owner_id, conn)
+        owned = await conn.fetchrow(
+            "SELECT id FROM chatbots WHERE id = $1 AND client_id = $2", chatbot_id, client_id
+        )
+        if not owned:
+            raise HTTPException(status_code=404, detail="Chatbot not found")
+
+        fields, values = [], []
+        for key in ["name", "persona", "brand_color", "status"]:
+            if key in payload:
+                values.append(payload[key])
+                fields.append(f"{key} = ${len(values)}")
+
+        if not fields:
+            raise HTTPException(status_code=400, detail="No fields to update")
+
+        values.append(chatbot_id)
+        query = f"UPDATE chatbots SET {', '.join(fields)} WHERE id = ${len(values)} RETURNING *"
+        row = await conn.fetchrow(query, *values)
+    return dict(row)
+
 
 @router.post("/chatbots/{chatbot_id}/documents")
 async def add_documents(
