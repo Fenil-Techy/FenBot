@@ -9,8 +9,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, Settings, Sparkles } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export function UserProfile() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+  };
+
   const initials = currentUser.name
     .split(" ")
     .map((n) => n[0])
@@ -52,7 +62,10 @@ export function UserProfile() {
           <span>Upgrade to Pro</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-[#24262D]" />
-        <DropdownMenuItem className="flex items-center gap-2 px-2.5 py-2 text-[13px] text-red-400 rounded-lg cursor-pointer focus:bg-[#1D2026] focus:text-red-300 transition-colors">
+        <DropdownMenuItem
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-2.5 py-2 text-[13px] text-red-400 rounded-lg cursor-pointer focus:bg-[#1D2026] focus:text-red-300 transition-colors"
+        >
           <LogOut className="w-4 h-4 shrink-0" />
           <span>Log out</span>
         </DropdownMenuItem>
