@@ -4,6 +4,7 @@ import {
   Inbox,
   BookOpen,
   BarChart3,
+  Code2,
   CreditCard,
   Settings,
   HelpCircle,
@@ -46,6 +47,12 @@ export const navItems: NavItemConfig[] = [
     href: "/dashboard/analytics",
     label: "Analytics",
     icon: BarChart3,
+    group: "main",
+  },
+  {
+    href: "/dashboard/docs",
+    label: "Install Guide",
+    icon: Code2,
     group: "main",
   },
   {
