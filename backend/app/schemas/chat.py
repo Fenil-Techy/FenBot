@@ -15,3 +15,4 @@ class Message(BaseModel):
 
 class chatRequest(BaseModel):
     messages: List[Message]
+    visitor_id: Optional[str] = None
