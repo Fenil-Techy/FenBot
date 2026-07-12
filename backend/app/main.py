@@ -1,6 +1,11 @@
 from contextlib import asynccontextmanager
 from app.routes.dashboard import router as dashboard_router
 from app.routes.whatsapp import router as whatsapp_router
+from app.routes.chatbots import router as chatbots_router
+from app.routes.documents import router as documents_router
+from app.routes.conversations import router as conversations_router
+from app.routes.analytics import router as analytics_router
+from app.routes.billing import router as billing_router
 from fastapi import FastAPI
 from app.routes.chat import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,3 +31,8 @@ app.add_middleware(
 app.include_router(chat_router)
 app.include_router(whatsapp_router)
 app.include_router(dashboard_router)
+app.include_router(chatbots_router)
+app.include_router(documents_router)
+app.include_router(conversations_router)
+app.include_router(analytics_router)
+app.include_router(billing_router)
