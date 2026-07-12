@@ -1,16 +1,151 @@
 "use client";
-import { useState } from "react";
-import { BarChart3, Sliders, TrendingUp, Zap } from "lucide-react";
-import { hasData as initialHasData, analyticsMetrics, dailyConversationCounts, hourlyPerformance } from "@/lib/dashboard/mock-data";
+import { useEffect, useState, useCallback } from "react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart3, TrendingUp, MessageSquare, Clock, HelpCircle, Loader2, WifiOff } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/dashboard/shared/EmptyState";
-import { KpiCard } from "@/components/dashboard/shared/KpiCard";
-import { DashboardCard } from "@/components/dashboard/shared/DashboardCard";
 import { Button } from "@/components/ui/button";
 
-export default function AnalyticsPage() {
-  const [demoHasData, setDemoHasData] = useState(initialHasData.analytics);
+type Bot = { id: string; name: string };
+type Analytics = {
+  total_conversations: number;
+  total_messages: number;
+  total_duration_seconds: number;
+  daily_volume: { day: string; count: number }[];
+  top_questions: { question: string; count: number }[];
+};
 
-  const maxCount = Math.max(...dailyConversationCounts.map((d) => d.count));
+function formatDuration(seconds: number) {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  if (hrs === 0) return `${mins}m`;
+  return `${hrs}h ${mins}m`;
+}
+
+export default function AnalyticsPage() {
+  const [bots, setBots] = useState<Bot[]>([]);
+  const [selectedBot, setSelectedBot] = useState<string>("");
+  const [data, setData] = useState<Analytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadBots = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) {
+        setError("Unauthorized");
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch("http://localhost:8000/dashboard/chatbots", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch chatbots");
+      }
+
+      const botList = await res.json();
+      setBots(botList);
+      if (botList.length > 0) {
+        setSelectedBot(botList[0].id);
+      } else {
+        setLoading(false);
+      }
+    } catch (e) {
+      console.error(e);
+      setError("unreachable");
+      setLoading(false);
+    }
+  }, []);
+
+  const loadAnalytics = useCallback(async (botId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`http://localhost:8000/dashboard/analytics/${botId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch analytics");
+      }
+
+      setData(await res.json());
+    } catch (e) {
+      console.error(e);
+      setError("unreachable");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBots();
+  }, [loadBots]);
+
+  useEffect(() => {
+    if (selectedBot) {
+      loadAnalytics(selectedBot);
+    }
+  }, [selectedBot, loadAnalytics]);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[#16181D] border border-[#2A2E36] text-[#F5F5F5] text-[12px] p-3 rounded-xl shadow-2xl leading-normal">
+          <p className="font-mono text-[#8B919D] mb-1">{payload[0].payload.day}</p>
+          <p className="font-semibold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded bg-[#E8281E]" />
+            <span>Conversations: <strong className="text-white">{payload[0].value}</strong></span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (loading && bots.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-3">
+        <Loader2 className="w-8 h-8 text-[#E8281E] animate-spin" />
+        <p className="text-[14px] text-[#8B919D]">Loading analytics...</p>
+      </div>
+    );
+  }
+
+  if (error === "unreachable") {
+    return (
+      <div
+        style={{ width: "100%", maxWidth: "32rem" }}
+        className="flex flex-col items-center justify-center text-center py-16 px-6 border border-[#EF4444]/20 rounded-2xl bg-[#EF4444]/5 mx-auto my-8 text-[#F5F5F5]"
+      >
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#EF4444]/10 text-[#EF4444] mb-4">
+          <WifiOff className="w-6 h-6" />
+        </div>
+        <h3 className="text-[16px] font-semibold text-[#F5F5F5] mb-1">Server Unreachable</h3>
+        <p className="text-[14px] text-[#8B919D] max-w-sm mb-6">
+          Failed to fetch analytics from the server at <code className="text-[#F5F5F5] bg-[#16181D] px-1.5 py-0.5 rounded font-mono text-xs">http://localhost:8000</code>.
+        </p>
+        <Button
+          onClick={loadBots}
+          className="bg-[#E8281E] text-white hover:bg-[#C41F16] rounded-xl px-5 h-10 text-[14px] font-medium border-none cursor-pointer"
+        >
+          Retry Connection
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -19,17 +154,22 @@ export default function AnalyticsPage() {
         <div>
           <p className="text-[14px] text-[#8B919D]">Understand how effectively the AI resolves customer inquiries.</p>
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => setDemoHasData(!demoHasData)}
-          className="text-[12px] h-8 text-[#8B919D] hover:text-[#F5F5F5] hover:bg-[#1D2026] rounded-xl flex items-center gap-1.5 px-3 border border-[#2A2E36] cursor-pointer"
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>State: {demoHasData ? "Populated" : "Empty"}</span>
-        </Button>
+        {bots.length > 0 && (
+          <select
+            value={selectedBot}
+            onChange={(e) => setSelectedBot(e.target.value)}
+            className="border border-[#20232A] rounded-xl px-3 h-8 text-[12px] bg-[#16181D] text-[#F5F5F5] font-semibold focus:outline-none focus:border-[#E8281E] cursor-pointer"
+          >
+            {bots.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {!demoHasData ? (
+      {bots.length === 0 ? (
         <EmptyState
           icon={BarChart3}
           title="No analytics insights yet."
@@ -37,108 +177,120 @@ export default function AnalyticsPage() {
         />
       ) : (
         <div className="space-y-6">
-          {/* KPI metrics row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {analyticsMetrics.map((m) => (
-              <KpiCard
-                key={m.id}
-                title={m.title}
-                value={m.value}
-                description={m.description}
-                trend={m.trend}
-                trendDirection={m.trendDirection}
-              />
-            ))}
-          </div>
-
-          {/* Two HTML/CSS chart grids */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Chart 1: Daily Conversations Bar Chart */}
-            <DashboardCard className="flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center pb-4 border-b border-[#24262D] mb-6">
-                  <h3 className="text-card-title text-[#F5F5F5] flex items-center gap-2">
+          {data && (
+            <>
+              {/* KPI Stats Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="dashboard-card flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[#8B919D]">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider">Total Conversations</p>
                     <TrendingUp className="w-4 h-4 text-[#E8281E]" />
-                    <span>Daily Inquiries & Automation</span>
-                  </h3>
-                  <span className="text-[11px] text-[#8B919D] font-mono">Last 7 Days</span>
+                  </div>
+                  <p className="text-metric text-[#F5F5F5]">{data.total_conversations}</p>
+                  <p className="text-[12px] text-[#8B919D]">All interactions recorded</p>
                 </div>
 
-                {/* Bars Grid */}
-                <div className="h-60 flex items-end justify-between gap-2 px-2 mt-4">
-                  {dailyConversationCounts.map((data) => {
-                    const totalHeight = `${(data.count / maxCount) * 100}%`;
-                    const automatedHeight = `${(data.automated / data.count) * 100}%`;
-
-                    return (
-                      <div key={data.day} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                        {/* Bar */}
-                        <div className="relative w-full rounded-t-lg bg-[#252932] overflow-hidden hover:bg-[#2A2E36] transition-all duration-150" style={{ height: totalHeight }}>
-                          {/* Inner automated portion */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-[#E8281E] rounded-t-md hover:bg-[#C41F16]" style={{ height: automatedHeight }} />
-                          
-                          {/* Hover Tooltip */}
-                          <div className="absolute opacity-0 group-hover:opacity-100 bg-[#16181D] border border-[#2A2E36] text-[#F5F5F5] text-[10px] p-2 rounded-lg -top-12 left-1/2 -translate-x-1/2 shadow-xl z-20 pointer-events-none transition-all w-24 text-center leading-normal">
-                            <div>Total: {data.count}</div>
-                            <div className="text-[#E8281E] font-semibold">Auto: {data.automated}</div>
-                          </div>
-                        </div>
-                        <span className="text-[11px] text-[#8B919D] font-semibold">{data.day}</span>
-                      </div>
-                    );
-                  })}
+                <div className="dashboard-card flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[#8B919D]">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider">Total Messages</p>
+                    <MessageSquare className="w-4 h-4 text-[#E8281E]" />
+                  </div>
+                  <p className="text-metric text-[#F5F5F5]">{data.total_messages}</p>
+                  <p className="text-[12px] text-[#8B919D]">Sent and received messages</p>
                 </div>
 
-                {/* Legend */}
-                <div className="flex justify-center gap-4 mt-6 text-[12px]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded bg-[#E8281E]" />
-                    <span className="text-[#B4BAC5]">Automated by AI</span>
+                <div className="dashboard-card flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[#8B919D]">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider">Conversation Time</p>
+                    <Clock className="w-4 h-4 text-[#E8281E]" />
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded bg-[#252932]" />
-                    <span className="text-[#8B919D]">Human Agent Handled</span>
-                  </div>
+                  <p className="text-metric text-[#F5F5F5]">{formatDuration(data.total_duration_seconds)}</p>
+                  <p className="text-[12px] text-[#8B919D]">Active support duration</p>
                 </div>
               </div>
-            </DashboardCard>
 
-            {/* Chart 2: Hourly Performance */}
-            <DashboardCard className="flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center pb-4 border-b border-[#24262D] mb-6">
-                  <h3 className="text-card-title text-[#F5F5F5] flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>AI Automation Efficiency</span>
-                  </h3>
-                  <span className="text-[11px] text-[#8B919D] font-mono">By Peak Hours</span>
-                </div>
-
-                {/* Horizontal Progress Bars */}
-                <div className="space-y-4 py-2">
-                  {hourlyPerformance.map((item) => (
-                    <div key={item.hour} className="space-y-1">
-                      <div className="flex justify-between items-center text-[12px] text-[#B4BAC5]">
-                        <span className="font-semibold">{item.hour}</span>
-                        <span className="font-mono text-[#F5F5F5]">{item.rate}% success rate</span>
-                      </div>
-                      <div className="h-2 w-full bg-[#1D2026] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-[#E8281E] to-[#EF4444] rounded-full"
-                          style={{ width: `${item.rate}%` }}
-                        />
-                      </div>
+              {/* Charts & Details Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Conversations Chart */}
+                <div className="dashboard-card lg:col-span-2 flex flex-col justify-between p-6">
+                  <div>
+                    <div className="flex justify-between items-center pb-4 border-b border-[#24262D] mb-6">
+                      <h3 className="text-card-title text-[#F5F5F5] flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-[#E8281E]" />
+                        <span>Daily Conversations (Last 14 days)</span>
+                      </h3>
                     </div>
-                  ))}
+
+                    <div className="h-60 mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data.daily_volume}>
+                          <defs>
+                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#E8281E" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="#E8281E" stopOpacity={0.2} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis
+                            dataKey="day"
+                            tick={{ fontSize: 10, fill: "#8B919D" }}
+                            tickFormatter={(d) => {
+                              try {
+                                return d.slice(5); // Format YYYY-MM-DD -> MM-DD
+                              } catch {
+                                return d;
+                              }
+                            }}
+                            axisLine={{ stroke: "#20232A" }}
+                            tickLine={{ stroke: "#20232A" }}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10, fill: "#8B919D" }}
+                            allowDecimals={false}
+                            axisLine={{ stroke: "#20232A" }}
+                            tickLine={{ stroke: "#20232A" }}
+                          />
+                          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1D2026", opacity: 0.4 }} />
+                          <Bar dataKey="count" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="bg-[#16181D] p-3 rounded-xl border border-[#20232A] mt-6 text-[12px] text-[#8B919D] leading-normal flex items-start gap-2">
-                  <span className="text-amber-400 font-bold shrink-0">Tip:</span>
-                  <span>AI efficiency peaks during business hours when document models receive frequent training updates.</span>
+                {/* Top Questions */}
+                <div className="dashboard-card flex flex-col justify-between p-6">
+                  <div>
+                    <div className="flex justify-between items-center pb-4 border-b border-[#24262D] mb-6">
+                      <h3 className="text-card-title text-[#F5F5F5] flex items-center gap-2">
+                        <HelpCircle className="w-4 h-4 text-[#E8281E]" />
+                        <span>Top Questions</span>
+                      </h3>
+                    </div>
+
+                    {data.top_questions.length === 0 ? (
+                      <p className="text-[13px] text-[#8B919D] py-12 text-center">Not enough data yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {data.top_questions.map((q, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between text-[13px] py-1.5 border-b border-[#20232A]/30 last:border-0"
+                          >
+                            <p className="text-[#F5F5F5] truncate max-w-[80%] font-medium" title={q.question}>
+                              {q.question}
+                            </p>
+                            <span className="text-[#E8281E] bg-[#E8281E]/10 border border-[#E8281E]/20 rounded-full px-2 py-0.5 text-[10px] font-mono font-bold">
+                              {q.count}×
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </DashboardCard>
-          </div>
+            </>
+          )}
         </div>
       )}
     </div>
