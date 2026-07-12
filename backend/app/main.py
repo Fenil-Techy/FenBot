@@ -6,6 +6,7 @@ from app.routes.documents import router as documents_router
 from app.routes.conversations import router as conversations_router
 from app.routes.analytics import router as analytics_router
 from app.routes.billing import router as billing_router
+from app.routes.settings import router as settings_router
 from fastapi import FastAPI
 from app.routes.chat import router as chat_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,3 +37,4 @@ app.include_router(documents_router)
 app.include_router(conversations_router)
 app.include_router(analytics_router)
 app.include_router(billing_router)
+app.include_router(settings_router)
