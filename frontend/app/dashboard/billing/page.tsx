@@ -1,169 +1,260 @@
 "use client";
-import { useState } from "react";
-import { CreditCard, Sliders, ArrowUpRight, Check, Download, AlertCircle } from "lucide-react";
-import { hasData as initialHasData, billingPlan, usageMeters, invoicesList } from "@/lib/dashboard/mock-data";
-import { EmptyState } from "@/components/dashboard/shared/EmptyState";
+import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Check, Sparkles, Loader2, WifiOff } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/shared/DashboardCard";
 import { Button } from "@/components/ui/button";
 
+function guessIsIndia() {
+  if (typeof window === "undefined") return false;
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz === "Asia/Calcutta" || tz === "Asia/Kolkata" || navigator.language === "en-IN";
+  } catch {
+    return false;
+  }
+}
+
 export default function BillingPage() {
-  const [demoHasData, setDemoHasData] = useState(initialHasData.billing);
+  const [data, setData] = useState<any>(null);
+  const [isIndia, setIsIndia] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadBilling = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) {
+        setError("Unauthorized");
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch("http://localhost:8000/dashboard/billing", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch billing data");
+      }
+
+      const billingData = await res.json();
+      setData(billingData);
+    } catch (e) {
+      console.error(e);
+      setError("unreachable");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setIsIndia(guessIsIndia());
+    loadBilling();
+  }, [loadBilling]);
+
+  if (loading && !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-3">
+        <Loader2 className="w-8 h-8 text-[#E8281E] animate-spin" />
+        <p className="text-[14px] text-[#8B919D]">Loading subscription details...</p>
+      </div>
+    );
+  }
+
+  if (error === "unreachable") {
+    return (
+      <div
+        style={{ width: "100%", maxWidth: "32rem" }}
+        className="flex flex-col items-center justify-center text-center py-16 px-6 border border-[#EF4444]/20 rounded-2xl bg-[#EF4444]/5 mx-auto my-8 text-[#F5F5F5]"
+      >
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#EF4444]/10 text-[#EF4444] mb-4">
+          <WifiOff className="w-6 h-6" />
+        </div>
+        <h3 className="text-[16px] font-semibold text-[#F5F5F5] mb-1">Server Unreachable</h3>
+        <p className="text-[14px] text-[#8B919D] max-w-sm mb-6">
+          Failed to fetch subscription details from the server at <code className="text-[#F5F5F5] bg-[#16181D] px-1.5 py-0.5 rounded font-mono text-xs">http://localhost:8000</code>.
+        </p>
+        <Button
+          onClick={loadBilling}
+          className="bg-[#E8281E] text-white hover:bg-[#C41F16] rounded-xl px-5 h-10 text-[14px] font-medium border-none cursor-pointer"
+        >
+          Retry Connection
+        </Button>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const limit = data.plan_info.conversation_limit;
+  const usagePercent = limit ? Math.min(100, Math.round((data.conversations_used / limit) * 100)) : 0;
+  const priceKey = isIndia ? "price_inr" : "price_usd";
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="max-w-4xl mx-auto mt-6 px-6 text-[#F5F5F5] space-y-8">
       {/* Header controls */}
       <div className="flex justify-between items-center pb-4 border-b border-[#20232A] shrink-0">
         <div>
-          <p className="text-[14px] text-[#8B919D]">Manage your subscription plan, usage limits, and invoices.</p>
+          <h1 className="text-[20px] font-bold text-[#F5F5F5]">Billing</h1>
+          <p className="text-[12px] text-[#8B919D] mt-1">
+            Manage your subscription plan, usage limits, and invoices.
+          </p>
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => setDemoHasData(!demoHasData)}
-          className="text-[12px] h-8 text-[#8B919D] hover:text-[#F5F5F5] hover:bg-[#1D2026] rounded-xl flex items-center gap-1.5 px-3 border border-[#2A2E36] cursor-pointer"
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>State: {demoHasData ? "Populated" : "Empty"}</span>
-        </Button>
+
+        {/* Currency Switcher */}
+        <div className="flex items-center gap-1 bg-[#16181D] border border-[#20232A] rounded-xl p-1 shrink-0">
+          <button
+            onClick={() => setIsIndia(false)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-all cursor-pointer ${
+              !isIndia
+                ? "bg-[#E8281E] text-white"
+                : "text-[#8B919D] hover:text-[#F5F5F5]"
+            }`}
+          >
+            USD
+          </button>
+          <button
+            onClick={() => setIsIndia(true)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-all cursor-pointer ${
+              isIndia
+                ? "bg-[#E8281E] text-white"
+                : "text-[#8B919D] hover:text-[#F5F5F5]"
+            }`}
+          >
+            INR
+          </button>
+        </div>
       </div>
 
-      {!demoHasData ? (
-        <EmptyState
-          icon={CreditCard}
-          title="No billing history."
-          description="You are currently on the Free Trial. Upgrading to a premium tier will unlock advanced features and billing logs."
-          actionLabel="Upgrade Plan"
-          onAction={() => alert("Redirecting to Checkout...")}
-        />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Plan details and usage meters */}
-          <div className="lg:col-span-1 flex flex-col gap-6">
-            {/* Current Plan */}
-            <DashboardCard className="relative overflow-hidden bg-gradient-to-br from-[#16181D] to-[#101113]">
-              <div className="space-y-1 z-10 relative">
-                <span className="text-[11px] font-bold text-[#E8281E] uppercase tracking-wider">
-                  Active Subscription
+      {/* Current Plan & Usage */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Active plan card */}
+        <DashboardCard className="relative overflow-hidden bg-gradient-to-br from-[#16181D] to-[#101113] border border-[#20232A] flex flex-col justify-between p-6">
+          <div className="space-y-2 z-10">
+            <span className="text-[10px] font-bold text-[#E8281E] uppercase tracking-wider">
+              Active Subscription
+            </span>
+            <h3 className="text-[22px] font-bold text-[#F5F5F5]">{data.plan_info.label}</h3>
+            <p className="text-[26px] font-extrabold text-[#F5F5F5] mt-1">
+              {data.plan_info[priceKey]}
+            </p>
+            <p className="text-[12px] text-[#8B919D]">
+              Renews automatically. Cancel or upgrade anytime.
+            </p>
+          </div>
+          <div className="mt-6 flex items-center gap-2 z-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              Active
+            </span>
+          </div>
+          {/* Neon background blur */}
+          <div className="absolute right-0 bottom-0 w-24 h-24 bg-[#E8281E]/10 rounded-full blur-2xl pointer-events-none" />
+        </DashboardCard>
+
+        {/* Meters Card */}
+        <DashboardCard className="md:col-span-2 border border-[#20232A] bg-[#16181D]/30 p-6 flex flex-col justify-between gap-6">
+          <div>
+            <h3 className="text-[14px] font-semibold text-[#F5F5F5] mb-4">
+              Usage This Period
+            </h3>
+
+            {/* Conversation usage */}
+            <div className="space-y-2 mb-6">
+              <div className="flex justify-between items-center text-[12px]">
+                <span className="font-semibold text-[#B4BAC5]">Conversations</span>
+                <span className="text-[#8B919D]">
+                  <strong className="text-[#F5F5F5]">{data.conversations_used}</strong>{" "}
+                  {limit ? `/ ${limit} limit` : " (unlimited)"}
                 </span>
-                <h3 className="text-[20px] font-bold text-[#F5F5F5]">{billingPlan.currentPlanName}</h3>
-                <p className="text-[24px] font-bold text-[#F5F5F5] mt-2">
-                  {billingPlan.price}
-                  <span className="text-[12px] font-normal text-[#8B919D]"> / month</span>
-                </p>
-                <p className="text-[12px] text-[#8B919D] pt-1">
-                  {billingPlan.billingCycle}
-                </p>
               </div>
-
-              <div className="mt-6 flex gap-2 z-10 relative">
-                <Button
-                  onClick={() => alert("Opening plan upgrade panel...")}
-                  className="bg-[#E8281E] text-white hover:bg-[#C41F16] rounded-xl h-9 text-[13px] font-medium px-4 cursor-pointer border-none flex items-center gap-1"
-                >
-                  <span>Change Plan</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => alert("Cancelling subscription modal...")}
-                  className="bg-transparent border border-[#2A2E36] text-[#8B919D] hover:text-[#F5F5F5] hover:bg-[#1D2026] rounded-xl h-9 text-[13px] font-medium px-4 cursor-pointer"
-                >
-                  Cancel
-                </Button>
+              {/* Progress bar */}
+              <div className="h-2 w-full bg-[#101113] rounded-full overflow-hidden border border-[#20232A]/50">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    usagePercent >= 90 ? "bg-red-500" : "bg-[#E8281E]"
+                  }`}
+                  style={{ width: `${limit ? usagePercent : 100}%` }}
+                />
               </div>
+              {limit && usagePercent >= 90 && (
+                <p className="text-[10px] text-red-500 font-medium">
+                  Close to subscription limits. Upgrade to avoid message interruptions.
+                </p>
+              )}
+            </div>
 
-              {/* Vercel styled glow */}
-              <div className="absolute right-0 bottom-0 w-24 h-24 bg-[#E8281E]/10 rounded-full blur-2xl pointer-events-none" />
-            </DashboardCard>
+            {/* Chatbot count */}
+            <div className="flex justify-between items-center text-[12px] pt-1">
+              <span className="font-semibold text-[#B4BAC5]">Chatbots Active</span>
+              <span className="text-[#8B919D]">
+                <strong className="text-[#F5F5F5]">{data.chatbots_used}</strong>{" "}
+                {data.plan_info.chatbot_limit ? `/ ${data.plan_info.chatbot_limit}` : " (unlimited)"}
+              </span>
+            </div>
+          </div>
 
-            {/* Usage limits */}
-            <DashboardCard className="space-y-4">
-              <h3 className="text-card-title text-[#F5F5F5] pb-2 border-b border-[#24262D]">
-                Usage This Period
-              </h3>
-              <div className="space-y-4">
-                {usageMeters.map((meter) => {
-                  const pct = Math.min((meter.value / meter.max) * 100, 100);
-                  const isCloseToLimit = pct >= 80;
+          <div className="bg-[#101113] border border-[#20232A] rounded-xl p-3 flex items-start gap-2 text-[11px] text-[#8B919D] leading-normal">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+            <span>
+              Usage limits refresh automatically at the start of each billing cycle.
+            </span>
+          </div>
+        </DashboardCard>
+      </div>
 
-                  return (
-                    <div key={meter.id} className="space-y-1">
-                      <div className="flex justify-between items-center text-[12px]">
-                        <span className="font-semibold text-[#B4BAC5]">{meter.label}</span>
-                        <span className="text-[#8B919D]">
-                          <strong className="text-[#F5F5F5]">{meter.value}</strong> / {meter.max} {meter.unit}
-                        </span>
-                      </div>
-                      {/* Progress Bar */}
-                      <div className="h-2 w-full bg-[#1D2026] rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            isCloseToLimit ? "bg-[#EF4444]" : "bg-[#E8281E]"
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      {isCloseToLimit && (
-                        <div className="flex items-center gap-1 text-[10px] text-[#EF4444] pt-0.5">
-                          <AlertCircle className="w-3 h-3" />
-                          <span>Close to period limits</span>
-                        </div>
-                      )}
+      {/* Available Plans */}
+      <div className="space-y-4">
+        <h2 className="text-[15px] font-bold text-[#F5F5F5]">Available Plans</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Object.entries(data.all_plans).map(([key, plan]: [string, any]) => {
+            const isCurrent = key === data.current_plan;
+            return (
+              <DashboardCard
+                key={key}
+                className={`flex flex-col justify-between border transition-all ${
+                  isCurrent
+                    ? "border-[#E8281E] bg-[#E8281E]/5"
+                    : "border-[#20232A] bg-[#16181D]/30 hover:border-[#2A2E36]"
+                }`}
+              >
+                <div>
+                  <h3 className="font-bold text-[15px] text-[#F5F5F5]">{plan.label}</h3>
+                  <p className="text-[20px] font-extrabold text-[#F5F5F5] mt-1.5">
+                    {plan[priceKey]}
+                  </p>
+                  <p className="text-[11px] text-[#8B919D] mt-2 leading-relaxed">
+                    {plan.conversation_limit
+                      ? `${plan.conversation_limit} conversations/mo`
+                      : "Unlimited conversations"}{" "}
+                    · {plan.chatbot_limit ? `${plan.chatbot_limit} chatbot(s)` : "Unlimited chatbots"}
+                  </p>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-[#20232A]/50">
+                  {isCurrent ? (
+                    <div className="flex items-center justify-center gap-1.5 text-[12px] text-[#E8281E] font-bold uppercase tracking-wider py-2">
+                      <Check size={14} className="text-[#E8281E]" /> Current Plan
                     </div>
-                  );
-                })}
-              </div>
-            </DashboardCard>
-          </div>
-
-          {/* Invoice List */}
-          <div className="lg:col-span-2">
-            <DashboardCard className="space-y-4 h-full flex flex-col">
-              <h3 className="text-card-title text-[#F5F5F5] pb-2 border-b border-[#24262D]">
-                Invoices History
-              </h3>
-
-              <div className="flex-1 overflow-x-auto min-w-0">
-                <table className="w-full text-[13px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#20232A] text-[#8B919D] text-left">
-                      <th className="py-2.5 font-medium">Invoice Number</th>
-                      <th className="py-2.5 font-medium">Date</th>
-                      <th className="py-2.5 font-medium">Amount</th>
-                      <th className="py-2.5 font-medium">Status</th>
-                      <th className="py-2.5 font-medium text-right">Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#20232A]">
-                    {invoicesList.map((inv) => (
-                      <tr key={inv.id} className="text-[#B4BAC5] hover:text-[#F5F5F5]">
-                        <td className="py-3.5 font-mono text-[#F5F5F5]">{inv.invoiceNumber}</td>
-                        <td className="py-3.5">{inv.date}</td>
-                        <td className="py-3.5 font-semibold text-[#F5F5F5]">{inv.amount}</td>
-                        <td className="py-3.5">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#22C55E]/10 text-[#22C55E] leading-none border border-[#22C55E]/20">
-                            <Check className="w-3 h-3 text-[#22C55E]" />
-                            <span>Paid</span>
-                          </span>
-                        </td>
-                        <td className="py-3.5 text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => alert(`Downloading ${inv.invoiceNumber}...`)}
-                            className="w-8 h-8 text-[#8B919D] hover:text-[#F5F5F5] hover:bg-[#1D2026] rounded-lg cursor-pointer"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </DashboardCard>
-          </div>
+                  ) : (
+                    <a
+                      href={`mailto:hello@fenbot.com?subject=Plan%20Change%20Request:%20${plan.label}`}
+                      className="block text-center bg-[#E8281E] hover:bg-[#C41F16] text-white text-[12px] font-semibold rounded-xl py-2 transition-all cursor-pointer border-none"
+                    >
+                      {key === "free" ? "Downgrade" : "Upgrade"}
+                    </a>
+                  )}
+                </div>
+              </DashboardCard>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 }
