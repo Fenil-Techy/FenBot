@@ -1,11 +1,21 @@
 "use client";
-import { HelpCircle, BookOpen, MessageSquare, Terminal, Server, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { HelpCircle, BookOpen, MessageSquare, Terminal, Server, ArrowRight, Code2 } from "lucide-react";
 import { helpFaqs } from "@/lib/dashboard/mock-data";
 import { DashboardCard } from "@/components/dashboard/shared/DashboardCard";
 import { Button } from "@/components/ui/button";
 
 export default function HelpPage() {
+  const router = useRouter();
+
   const cards = [
+    {
+      title: "Install Guide",
+      desc: "Get embedding scripts for HTML, Shopify, WordPress, and Wix sites.",
+      icon: Code2,
+      color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+      href: "/dashboard/docs",
+    },
     {
       title: "Knowledge Base Docs",
       desc: "Learn how to format website indexes, pdf files, and text manuals.",
@@ -26,6 +36,14 @@ export default function HelpPage() {
     },
   ];
 
+  const handleCardClick = (c: any) => {
+    if (c.href) {
+      router.push(c.href);
+    } else {
+      alert(`Redirecting to ${c.title}...`);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -34,14 +52,14 @@ export default function HelpPage() {
       </div>
 
       {/* Docs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
             <DashboardCard
               key={c.title}
-              onClick={() => alert(`Redirecting to ${c.title}...`)}
-              className="group flex flex-col justify-between min-h-[140px]"
+              onClick={() => handleCardClick(c)}
+              className="group flex flex-col justify-between min-h-[140px] cursor-pointer"
             >
               <div>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${c.color}`}>
