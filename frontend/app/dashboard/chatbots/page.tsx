@@ -155,7 +155,10 @@ export default function ChatbotsPage() {
         </div>
       ) : error === "unreachable" ? (
         // Server Unreachable UI State
-        <div className="flex flex-col items-center justify-center text-center py-16 px-6 border border-[#EF4444]/20 rounded-2xl bg-[#EF4444]/5 max-w-lg mx-auto my-8">
+        <div
+          style={{ width: "100%", maxWidth: "32rem" }}
+          className="flex flex-col items-center justify-center text-center py-16 px-6 border border-[#EF4444]/20 rounded-2xl bg-[#EF4444]/5 mx-auto my-8"
+        >
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#EF4444]/10 text-[#EF4444] mb-4">
             <WifiOff className="w-6 h-6" />
           </div>
