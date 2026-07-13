@@ -2,68 +2,101 @@
 import Link from "next/link";
 import { navItems } from "@/lib/dashboard/nav-config";
 import { SidebarNavItem } from "./SidebarNavItem";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { UserProfile } from "./UserProfile";
+import { PanelLeftClose, PanelLeft } from "lucide-react";
 
-export function DashboardSidebar() {
+interface DashboardSidebarProps {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}
+
+export function DashboardSidebar({ isCollapsed, onToggle }: DashboardSidebarProps) {
   const mainNavItems = navItems.filter((item) => item.group === "main");
   const secondaryNavItems = navItems.filter((item) => item.group === "secondary");
 
   return (
-    <aside className="w-[260px] h-screen bg-[#101113] border-r border-[#20232A] flex flex-col shrink-0 select-none">
-      {/* Top Header: Logo */}
-      <div className="h-16 px-6 flex items-center gap-2 border-b border-[#20232A]">
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-6 h-6 rounded-lg bg-[#E8281E] flex items-center justify-center text-white font-bold text-xs shadow-md shadow-[#E8281E]/20">
-            F
-          </div>
-          <span className="font-display font-bold text-[18px] text-[#F5F5F5] tracking-tight group-hover:text-white transition-colors">
-            FenBot
-          </span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#252932] text-[#B4BAC5] font-mono leading-none">
-            Beta
-          </span>
+    <aside className={`h-full bg-[#090909] border border-white/5 rounded-[20px] flex flex-col shrink-0 select-none transition-all duration-300 overflow-visible z-20 relative ${
+      isCollapsed ? "w-[72px]" : "w-[260px]"
+    }`}>
+      {/* Top Header: Logo & Toggle Button */}
+      <div className={`px-4 py-4 flex border-b border-white/5 shrink-0 ${
+        isCollapsed ? "flex-col items-center" : "items-center justify-between"
+      }`}>
+        <Link href="/dashboard" className="flex items-center gap-2 group overflow-hidden shrink-0">
+          <img
+            src="/logo/rocket.svg"
+            alt="FenBot Logo"
+            className="w-8 h-8 shrink-0 object-contain rotate-[20deg]"
+          />
+          {!isCollapsed && (
+            <span className="font-sans font-bold text-[18px] text-[#FAFAFA] tracking-tight group-hover:text-white transition-colors truncate">
+              FenBot
+            </span>
+          )}
         </Link>
+
+        {isCollapsed ? (
+          <button
+            onClick={onToggle}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#111111] border border-white/5 hover:bg-[#151515] text-[#71717A] hover:text-[#FAFAFA] transition-all cursor-pointer mt-4 shrink-0"
+            title="Expand Sidebar"
+          >
+            <PanelLeft size={16} strokeWidth={1.5} />
+          </button>
+        ) : (
+          <button
+            onClick={onToggle}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#111111] border border-white/5 hover:bg-[#151515] text-[#71717A] hover:text-[#FAFAFA] transition-all cursor-pointer shrink-0"
+            title="Collapse Sidebar"
+          >
+            <PanelLeftClose size={16} strokeWidth={1.5} />
+          </button>
+        )}
       </div>
 
-      {/* Workspace Switcher */}
-      <div className="p-4 border-b border-[#20232A]">
-        <WorkspaceSwitcher />
-      </div>
-
-      {/* Navigation Groups */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Main Items */}
+      {/* Navigation Items */}
+      <div className="flex-1 overflow-y-visible p-4 space-y-6">
+        {/* Main Section */}
         <div className="space-y-1">
+          {!isCollapsed && (
+            <div className="text-[10px] font-bold text-[#71717A] px-3.5 mb-2 uppercase tracking-wider">
+              General
+            </div>
+          )}
           {mainNavItems.map((item) => (
             <SidebarNavItem
               key={item.href}
               href={item.href}
               label={item.label}
-              icon={item.icon}
+              isCollapsed={isCollapsed}
             />
           ))}
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-[#24262D] mx-2" />
+        <div className="h-px bg-white/5 mx-2" />
 
-        {/* Secondary Items */}
+        {/* Secondary Section */}
         <div className="space-y-1">
+          {!isCollapsed && (
+            <div className="text-[10px] font-bold text-[#71717A] px-3.5 mb-2 uppercase tracking-wider">
+              System
+            </div>
+          )}
           {secondaryNavItems.map((item) => (
             <SidebarNavItem
               key={item.href}
               href={item.href}
               label={item.label}
-              icon={item.icon}
+              isCollapsed={isCollapsed}
             />
           ))}
         </div>
       </div>
 
       {/* Bottom Profile Section */}
-      <div className="p-4 border-t border-[#20232A] bg-[#0E0F11]">
-        <UserProfile />
+      <div className="p-4 border-t border-white/5 bg-[#090909] shrink-0 rounded-b-[20px]">
+        <UserProfile isCollapsed={isCollapsed} onToggle={isCollapsed ? onToggle : undefined} />
       </div>
     </aside>
   );

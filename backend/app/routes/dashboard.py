@@ -25,7 +25,7 @@ async def home_summary(owner_id: str = Depends(get_current_owner_id)):
         )
         recent = await conn.fetch(
             """
-            SELECT co.id, cb.name as bot_name, co.last_message_at,
+            SELECT co.id, co.visitor_id, cb.id as chatbot_id, cb.name as bot_name, co.last_message_at,
                    (SELECT content FROM messages m WHERE m.conversation_id = co.id ORDER BY m.created_at DESC LIMIT 1) as last_message
             FROM conversations co
             JOIN chatbots cb ON cb.id = co.chatbot_id
