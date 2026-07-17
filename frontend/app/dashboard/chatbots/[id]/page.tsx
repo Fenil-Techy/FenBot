@@ -4,13 +4,48 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { WidgetPreview } from "@/components/WidgetPreview";
 import { useChatAi } from "@/hooks/useChatAi";
-import { Trash2, ArrowLeft, Loader2, Save, Check, FileText, WifiOff, Send, Bot } from "lucide-react";
+import {
+  ArrowLeft, Loader2, Save, Check, WifiOff, Send, Bot,
+  BookOpen, Compass, Palette, Play, Globe,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 
-const TABS = ["Knowledge Base", "Persona", "Widget", "Test"] as const;
-type Tab = (typeof TABS)[number];
+// Extracted Components
+import { KnowledgeBaseTab } from "@/components/dashboard/chatbots/KnowledgeBaseTab";
+import { ChatSandbox } from "@/components/dashboard/chatbots/ChatSandbox";
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const TABS_WITH_META = [
+  { name: "Knowledge Base", icon: BookOpen, desc: "Manage grounding documents" },
+  { name: "Persona",        icon: Compass,  desc: "Tweak AI behavior instructions" },
+  { name: "Widget",         icon: Palette,  desc: "Brand appearance & theme" },
+  { name: "Test",           icon: Play,     desc: "Run live simulator sandbox" },
+] as const;
+
+type Tab = (typeof TABS_WITH_META)[number]["name"];
+
+const WIDGET_PRESETS = [
+  "#FAFAFA", "#8B5CF6", "#3B82F6", "#06B6D4",
+  "#22C55E", "#FBBF24", "#F97316", "#EF4444", "#EC4899",
+];
+
+function isHeaderColorLight(hex?: string) {
+  if (!hex) return false;
+  const c = hex.replace("#", "");
+  if (c.toLowerCase() === "ffffff" || c.toLowerCase() === "fafafa") return true;
+  if (c.length === 6) {
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 180;
+  }
+  return false;
+}
+
+// ─── ManageChatbotPage ───────────────────────────────────────────────────────
 
 export default function ManageChatbotPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,13 +55,21 @@ export default function ManageChatbotPage() {
   const [tab, setTab] = useState<Tab>("Knowledge Base");
   const [bot, setBot] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);
-  const [newDoc, setNewDoc] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [docSubmitting, setDocSubmitting] = useState(false);
+
+
+
+  // Widget customizer state
+  const [widgetSubTab, setWidgetSubTab] = useState<"menu" | "appearance" | "language" | "visibility">("menu");
+  const [showMoreColors, setShowMoreColors] = useState(false);
+  const [widgetPlacement, setWidgetPlacement] = useState<"left" | "right">("right");
+  const [widgetSpacing, setWidgetSpacing] = useState(20);
+  const [widgetMobileShow, setWidgetMobileShow] = useState(true);
 
   const supabase = createClient();
 
@@ -39,53 +82,34 @@ export default function ManageChatbotPage() {
     setError(null);
     try {
       const token = await getToken();
-      if (!token) {
-        setError("Unauthorized");
-        setLoading(false);
-        return;
-      }
+      if (!token) { setError("Unauthorized"); setLoading(false); return; }
 
       const [botRes, docsRes] = await Promise.all([
-        fetch(`http://localhost:8000/dashboard/chatbots/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`http://localhost:8000/dashboard/chatbots/${id}/documents`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`http://localhost:8000/dashboard/chatbots/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`http://localhost:8000/dashboard/chatbots/${id}/documents`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      if (!botRes.ok || !docsRes.ok) {
-        throw new Error("Server returned error response");
-      }
+      if (!botRes.ok || !docsRes.ok) throw new Error("Server returned error response");
 
-      const botData = await botRes.json();
-      const docsData = await docsRes.json();
-
-      setBot(botData);
-      setDocs(docsData);
-    } catch (err) {
-      console.error(err);
+      setBot(await botRes.json());
+      setDocs(await docsRes.json());
+    } catch {
       setError("unreachable");
     } finally {
       setLoading(false);
     }
   }, [id, getToken]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  // Set tab from query parameters if present
   useEffect(() => {
-    const queryTab = searchParams.get("tab");
-    if (queryTab && TABS.includes(queryTab as any)) {
-      setTab(queryTab as Tab);
+    const q = searchParams.get("tab");
+    if (q && (TABS_WITH_META.map((t) => t.name) as string[]).includes(q)) {
+      setTab(q as Tab);
     }
   }, [searchParams]);
 
-  const updateField = (field: string, value: string) => {
-    setBot((b: any) => ({ ...b, [field]: value }));
-  };
+  const updateField = (key: string, val: string) => setBot((prev: any) => ({ ...prev, [key]: val }));
 
   const handleSave = async () => {
     setSaving(true);
@@ -94,63 +118,37 @@ export default function ManageChatbotPage() {
       const token = await getToken();
       const res = await fetch(`http://localhost:8000/dashboard/chatbots/${id}`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: bot.name,
-          persona: bot.persona,
-          welcome_message: bot.welcome_message,
-          tone: bot.tone,
-          language: bot.language,
-          input_placeholder: bot.input_placeholder,
-          bubble_color: bot.bubble_color,
-          header_color: bot.header_color,
-          accent_color: bot.accent_color,
-          status: bot.status,
-        }),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(bot),
       });
-
-      if (!res.ok) throw new Error("Failed to update chatbot");
-      
+      if (!res.ok) throw new Error("Failed to save");
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (e) {
-      console.error(e);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch {
       alert("Failed to save changes");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddDoc = async () => {
-    if (!newDoc.trim()) return;
+  const handleAddSource = async (type: string, titleVal: string, contentVal: string) => {
+    if (!contentVal.trim()) return;
     setDocSubmitting(true);
     try {
       const token = await getToken();
+      const text = type === "Text" ? contentVal.trim() : `[${type}: ${titleVal.trim()}] ${contentVal.trim()}`;
       const res = await fetch(`http://localhost:8000/dashboard/chatbots/${id}/documents`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: newDoc }),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
       });
-
       if (!res.ok) throw new Error("Failed to add document");
-
-      setNewDoc("");
-      // Reload documents
       const docsRes = await fetch(`http://localhost:8000/dashboard/chatbots/${id}/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (docsRes.ok) {
-        setDocs(await docsRes.json());
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Failed to add to knowledge base");
+      if (docsRes.ok) setDocs(await docsRes.json());
+    } catch {
+      alert("Failed to add source to knowledge base");
     } finally {
       setDocSubmitting(false);
     }
@@ -163,21 +161,20 @@ export default function ManageChatbotPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) throw new Error("Failed to delete document");
-
+      if (!res.ok) throw new Error("Failed to delete");
       setDocs((prev) => prev.filter((d) => d.id !== docId));
-    } catch (e) {
-      console.error(e);
+    } catch {
       alert("Failed to delete document");
     }
   };
 
+  // ── Loading / Error states ─────────────────────────────────────────────────
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-3">
+      <div className="flex flex-col items-center justify-center py-40 gap-4">
         <Loader2 className="w-8 h-8 text-[#E8281E] animate-spin" />
-        <p className="text-[14px] text-[#8B919D]">Loading chatbot details...</p>
+        <p className="text-[13px] text-zinc-500 font-sans">Loading chatbot configuration...</p>
       </div>
     );
   }
@@ -186,20 +183,23 @@ export default function ManageChatbotPage() {
     return (
       <div
         style={{ width: "100%", maxWidth: "32rem" }}
-        className="flex flex-col items-center justify-center text-center py-16 px-6 border border-[#EF4444]/20 rounded-2xl bg-[#EF4444]/5 mx-auto my-8"
+        className="flex flex-col items-center justify-center text-center py-16 px-6 border border-[#EF4444]/20 rounded-2xl bg-[#EF4444]/5 mx-auto my-8 font-sans"
       >
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#EF4444]/10 text-[#EF4444] mb-4">
           <WifiOff className="w-6 h-6" />
         </div>
         <h3 className="text-[16px] font-semibold text-[#F5F5F5] mb-1">Server Unreachable</h3>
-        <p className="text-[14px] text-[#8B919D] max-w-sm mb-6">
-          Failed to fetch chatbot details from the server at <code className="text-[#F5F5F5] bg-[#16181D] px-1.5 py-0.5 rounded font-mono text-xs">http://localhost:8000</code>.
+        <p className="text-[14px] text-zinc-500 max-w-sm mb-6 leading-relaxed">
+          Failed to fetch chatbot details from{" "}
+          <code className="text-[#F5F5F5] bg-[#16181D] px-1.5 py-0.5 rounded font-mono text-xs border border-white/5">
+            http://localhost:8000
+          </code>.
         </p>
         <div className="flex gap-3">
           <Button
             onClick={() => router.push("/dashboard/chatbots")}
             variant="outline"
-            className="border-[#2A2E36] text-[#F5F5F5] hover:bg-[#1D2026] rounded-xl h-10 px-5 cursor-pointer"
+            className="border-white/5 text-[#F5F5F5] hover:bg-[#111113] rounded-xl h-10 px-5 cursor-pointer bg-[#0e0e10]"
           >
             Go Back
           </Button>
@@ -214,411 +214,426 @@ export default function ManageChatbotPage() {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6 text-[#F5F5F5] font-sans antialiased max-w-6xl mx-auto">
-      {/* Navigation Header */}
-      <div className="flex items-center gap-4 pb-4 border-b border-[#20232A]">
-        <button
-          onClick={() => router.push("/dashboard/chatbots")}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#16181D] border border-[#2A2E36] text-[#8B919D] hover:text-[#F5F5F5] transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div>
-          <h1 className="text-[20px] font-bold text-[#F5F5F5] leading-none">{bot.name}</h1>
-          <p className="text-[12px] text-[#8B919D] mt-1.5">
-            Manage training docs, persona parameters, widget appearance, and live test.
-          </p>
+  // ── Render helpers ─────────────────────────────────────────────────────────
+
+  const renderPersonaTab = () => (
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 items-start">
+      <div className="xl:col-span-2 bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-6 flex flex-col gap-6">
+        <div className="pb-3 border-b border-white/5">
+          <h3 className="text-[16px] font-bold text-white">Persona Customization</h3>
+          <p className="text-[12px] text-zinc-500 mt-1">Control your bot's behavior, tone, and active guidelines.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Bot Name</label>
+            <Input value={bot.name || ""} onChange={(e) => updateField("name", e.target.value)}
+              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Response Tone</label>
+            <select value={bot.tone || "friendly"} onChange={(e) => updateField("tone", e.target.value)}
+              className="w-full bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 px-3 focus:outline-none focus:border-[#E8281E]/40 transition-all cursor-pointer font-sans">
+              <option value="friendly">Friendly</option>
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Welcome Message</label>
+            <Input value={bot.welcome_message || ""} onChange={(e) => updateField("welcome_message", e.target.value)}
+              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Input Field Placeholder</label>
+            <Input value={bot.input_placeholder || ""} onChange={(e) => updateField("input_placeholder", e.target.value)}
+              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Output Language</label>
+            <Input value={bot.language || "English"} onChange={(e) => updateField("language", e.target.value)}
+              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">System Guidelines / Instruction Persona</label>
+            <Textarea rows={5} value={bot.persona || ""} onChange={(e) => updateField("persona", e.target.value)}
+              placeholder="Instructions to control the bot's tone, knowledge behavior, and custom instructions..."
+              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white placeholder-zinc-500 p-3 focus:outline-none focus:border-[#E8281E]/40 transition-all leading-relaxed font-sans" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3.5 pt-4 border-t border-white/5 mt-4">
+          <Button onClick={handleSave} disabled={saving}
+            className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-9 text-[12px] font-bold px-4 transition-all border-none flex items-center gap-1.5 cursor-pointer">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            <span>{saving ? "Saving changes..." : "Save changes"}</span>
+          </Button>
+          {saveSuccess && (
+            <span className="text-[12px] text-green-400 font-semibold flex items-center gap-1 font-sans">
+              <Check className="w-4 h-4" /> Saved successfully
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1.5 bg-[#101113] p-1 border border-[#20232A] rounded-xl self-start">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-[13px] font-semibold transition-all select-none cursor-pointer border-none ${
-              tab === t
-                ? "bg-[#252932] text-[#F5F5F5]"
-                : "text-[#8B919D] hover:text-[#F5F5F5]"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="xl:col-span-1 w-full flex justify-center">
+        <WidgetPreview bubbleColor={bot.bubble_color} headerColor={bot.header_color}
+          accentColor={bot.accent_color} welcomeMessage={bot.welcome_message}
+          inputPlaceholder={bot.input_placeholder} botName={bot.name} />
       </div>
+    </div>
+  );
 
-      {/* Tab Contents */}
-      <div className="mt-2">
-        {tab === "Knowledge Base" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            {/* Input Box */}
-            <div className="lg:col-span-1">
-              <div className="dashboard-card flex flex-col gap-4">
-                <h3 className="text-card-title text-[#F5F5F5] pb-2 border-b border-[#24262D]">
-                  Add Knowledge Text
-                </h3>
-                <Textarea
-                  value={newDoc}
-                  onChange={(e) => setNewDoc(e.target.value)}
-                  placeholder="Paste FAQ questions and answers, refund rules, shipping costs, or policy documents here..."
-                  rows={8}
-                  className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] placeholder-[#8B919D] p-3 focus:ring-1 focus:ring-[#E8281E] focus:outline-none leading-relaxed"
-                />
-                <Button
-                  onClick={handleAddDoc}
-                  disabled={!newDoc.trim() || docSubmitting}
-                  className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-10 text-[13px] font-medium transition-colors w-full cursor-pointer border-none flex items-center justify-center gap-1.5"
-                >
-                  {docSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Add to knowledge base</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Document List */}
-            <div className="lg:col-span-2">
-              <div className="dashboard-card flex flex-col gap-4">
-                <div className="pb-2 border-b border-[#24262D] flex justify-between items-center">
-                  <h3 className="text-card-title text-[#F5F5F5]">Active Documents</h3>
-                  <span className="text-[11px] text-[#8B919D] font-mono">{docs.length} segments</span>
+  const renderWidgetSettings = () => (
+    <div className="w-full lg:w-80 shrink-0 bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-5">
+      {widgetSubTab === "menu" ? (
+        <div className="space-y-5">
+          <div className="pb-3 border-b border-white/5">
+            <h3 className="text-[16px] font-bold text-white font-sans">Customize Widget</h3>
+            <p className="text-[12px] text-zinc-500 mt-1 font-sans">Brand and style the chatbot widget appearance.</p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { id: "appearance" as const, title: "Appearance", desc: "Customize widget theme and colors.", icon: Palette },
+              { id: "language"   as const, title: "Language",   desc: "Set language and default phrases.",  icon: Globe },
+              { id: "visibility" as const, title: "Visibility", desc: "Adjust alignment and offset.",        icon: Play },
+            ].map((item) => (
+              <button key={item.id} onClick={() => setWidgetSubTab(item.id)}
+                className="bg-[#111113]/30 border border-white/5 rounded-2xl p-4 hover:border-white/10 hover:bg-[#161619]/40 text-left w-full transition-all cursor-pointer flex gap-3.5 items-start group">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 shrink-0 group-hover:text-white transition-colors">
+                  <item.icon size={14} />
                 </div>
+                <div>
+                  <h4 className="text-[12px] font-bold text-white leading-tight">{item.title}</h4>
+                  <p className="text-[10px] text-zinc-500 mt-1 leading-normal font-sans">{item.desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <button onClick={() => setWidgetSubTab("menu")}
+            className="flex items-center gap-1.5 text-[12px] text-zinc-500 hover:text-white border-none bg-transparent cursor-pointer font-sans">
+            <ArrowLeft size={13} />
+            <span className="capitalize">{widgetSubTab} Settings</span>
+          </button>
 
-                {docs.length === 0 ? (
-                  <div className="py-12 flex flex-col items-center justify-center text-center text-[#8B919D]">
-                    <FileText className="w-8 h-8 mb-2 opacity-40" />
-                    <p className="text-[13px]">No documents found for this chatbot.</p>
+          {widgetSubTab === "appearance" && (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Theme</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={() => { updateField("header_color", "#FFFFFF"); updateField("bubble_color", "#FAFAFA"); }}
+                    className={`border rounded-xl p-2.5 text-left transition-all relative overflow-hidden h-20 flex flex-col justify-between cursor-pointer ${
+                      isHeaderColorLight(bot.header_color) ? "bg-[#161619] border-white/10 text-white" : "bg-[#111113]/30 border-white/5 text-zinc-500 hover:text-zinc-300"
+                    }`}>
+                    {isHeaderColorLight(bot.header_color) && <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#E8281E] rounded-full flex items-center justify-center text-white text-[8px] font-bold">✓</span>}
+                    <div className="w-full h-6 bg-white border border-slate-100 rounded-md opacity-30" />
+                    <span className="text-[11px] font-bold">Light</span>
+                  </button>
+                  <button type="button" onClick={() => { updateField("header_color", "#101113"); updateField("bubble_color", "#E8281E"); }}
+                    className={`border rounded-xl p-2.5 text-left transition-all relative overflow-hidden h-20 flex flex-col justify-between cursor-pointer ${
+                      !isHeaderColorLight(bot.header_color) ? "bg-[#161619] border-white/10 text-white" : "bg-[#111113]/30 border-white/5 text-zinc-500 hover:text-zinc-300"
+                    }`}>
+                    {!isHeaderColorLight(bot.header_color) && <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#E8281E] rounded-full flex items-center justify-center text-white text-[8px] font-bold">✓</span>}
+                    <div className="w-full h-6 bg-[#1a1a1f] border border-white/5 rounded-md opacity-30" />
+                    <span className="text-[11px] font-bold">Dark</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Primary Color</label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {WIDGET_PRESETS.map((color) => {
+                    const sel = bot.accent_color === color;
+                    return (
+                      <button key={color} type="button"
+                        onClick={() => { updateField("accent_color", color); updateField("bubble_color", color); }}
+                        style={{ backgroundColor: color }}
+                        className={`w-7 h-7 rounded-full border cursor-pointer transition-all flex items-center justify-center ${sel ? "scale-105 border-white" : "border-white/10 hover:scale-105"}`}>
+                        {sel && <span className={`text-[8px] font-bold ${color === "#FAFAFA" ? "text-slate-900" : "text-white"}`}>✓</span>}
+                      </button>
+                    );
+                  })}
+                  <div className="relative w-7 h-7 rounded-full border border-white/10 overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                    style={{ background: "conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)" }}>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] pointer-events-none drop-shadow">🎨</span>
+                    <input type="color" value={bot.accent_color || "#E8281E"}
+                      onChange={(e) => { updateField("accent_color", e.target.value); updateField("bubble_color", e.target.value); }}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
                   </div>
-                ) : (
-                  <div className="divide-y divide-[#20232A] max-h-[500px] overflow-y-auto pr-1 space-y-3">
-                    {docs.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="py-3 flex items-start justify-between gap-4 first:pt-0"
-                      >
-                        <p className="text-[13px] text-[#F5F5F5] leading-relaxed whitespace-pre-wrap flex-1">
-                          {doc.content}
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteDoc(doc.id)}
-                          className="w-8 h-8 text-[#8B919D] hover:text-red-400 hover:bg-[#1D2026] rounded-lg shrink-0 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <button type="button" onClick={() => setShowMoreColors(!showMoreColors)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-[#111113]/30 border border-white/5 rounded-xl text-[11px] font-bold text-zinc-400 hover:text-white transition-all cursor-pointer font-sans">
+                  <span>More colors</span>
+                  <span className={`transition-transform duration-200 text-[9px] ${showMoreColors ? "rotate-180" : ""}`}>▼</span>
+                </button>
+                {showMoreColors && (
+                  <div className="bg-[#111113]/20 border border-white/5 rounded-xl p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {[
+                      { key: "bubble_color", label: "Bubble Color" },
+                      { key: "header_color", label: "Header Color" },
+                      { key: "accent_color", label: "Accent Color" },
+                    ].map((field) => (
+                      <div key={field.key} className="space-y-0.5">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">{field.label}</label>
+                        <div className="flex items-center gap-1.5">
+                          <input type="color" value={bot[field.key] || "#E8281E"} onChange={(e) => updateField(field.key, e.target.value)}
+                            className="w-6 h-6 rounded border border-white/5 bg-[#111111] cursor-pointer shrink-0" />
+                          <Input value={bot[field.key] || ""} onChange={(e) => updateField(field.key, e.target.value)}
+                            className="bg-[#111111] border border-white/5 text-[11px] rounded-lg text-white h-7 px-2 focus:outline-none" />
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {tab === "Persona" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-            {/* Persona Settings */}
-            <div className="lg:col-span-2 dashboard-card flex flex-col gap-4">
-              <div className="pb-2 border-b border-[#24262D]">
-                <h3 className="text-card-title text-[#F5F5F5]">Persona Customization</h3>
+          {widgetSubTab === "language" && (
+            <div className="space-y-4">
+              {[
+                { key: "language",          label: "Output Language"    },
+                { key: "welcome_message",   label: "Welcome Greeting"   },
+                { key: "input_placeholder", label: "Input Placeholder"  },
+              ].map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">{f.label}</label>
+                  <Input value={bot[f.key] || ""} onChange={(e) => updateField(f.key, e.target.value)}
+                    className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 focus:outline-none" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {widgetSubTab === "visibility" && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Placement Alignment</label>
+                <select value={widgetPlacement} onChange={(e) => setWidgetPlacement(e.target.value as any)}
+                  className="w-full bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 px-2 cursor-pointer focus:outline-none font-sans">
+                  <option value="right">Right Side (Default)</option>
+                  <option value="left">Left Side</option>
+                </select>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Bot Name */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider">
-                    Bot Name
-                  </label>
-                  <Input
-                    value={bot.name || ""}
-                    onChange={(e) => updateField("name", e.target.value)}
-                    className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] h-9 focus:ring-1 focus:ring-[#E8281E]"
-                  />
-                </div>
-
-                {/* Tone */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider block">
-                    Response Tone
-                  </label>
-                  <select
-                    value={bot.tone || "friendly"}
-                    onChange={(e) => updateField("tone", e.target.value)}
-                    className="w-full bg-[#101113] border border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] h-9 px-3 focus:ring-1 focus:ring-[#E8281E] focus:outline-none cursor-pointer"
-                  >
-                    <option value="friendly">Friendly</option>
-                    <option value="professional">Professional</option>
-                    <option value="casual">Casual</option>
-                  </select>
-                </div>
-
-                {/* Welcome Message */}
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider">
-                    Welcome Message
-                  </label>
-                  <Input
-                    value={bot.welcome_message || ""}
-                    onChange={(e) => updateField("welcome_message", e.target.value)}
-                    className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] h-9 focus:ring-1 focus:ring-[#E8281E]"
-                  />
-                </div>
-
-                {/* Input Placeholder */}
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider">
-                    Input Field Placeholder
-                  </label>
-                  <Input
-                    value={bot.input_placeholder || ""}
-                    onChange={(e) => updateField("input_placeholder", e.target.value)}
-                    className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] h-9 focus:ring-1 focus:ring-[#E8281E]"
-                  />
-                </div>
-
-                {/* Language */}
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider">
-                    Output Language
-                  </label>
-                  <Input
-                    value={bot.language || "English"}
-                    onChange={(e) => updateField("language", e.target.value)}
-                    className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] h-9 focus:ring-1 focus:ring-[#E8281E]"
-                  />
-                </div>
-
-                {/* System Persona Instructions */}
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider block">
-                    System Guidelines / Instruction Persona
-                  </label>
-                  <Textarea
-                    rows={4}
-                    value={bot.persona || ""}
-                    onChange={(e) => updateField("persona", e.target.value)}
-                    placeholder="Instructions to control the bot's tone and behavior..."
-                    className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] placeholder-[#8B919D] p-3 focus:ring-1 focus:ring-[#E8281E] focus:outline-none leading-relaxed"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Spacing Offset (px)</label>
+                <Input type="number" value={widgetSpacing} onChange={(e) => setWidgetSpacing(Number(e.target.value))}
+                  min={10} max={100}
+                  className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 focus:outline-none" />
               </div>
-
-              <div className="flex items-center gap-3 mt-4 pt-2 border-t border-[#24262D]">
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-10 px-5 text-[13px] font-medium transition-colors border-none flex items-center gap-1.5 cursor-pointer"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>{saving ? "Saving changes..." : "Save changes"}</span>
-                </Button>
-                {saveSuccess && (
-                  <span className="text-[12px] text-green-400 font-semibold flex items-center gap-1">
-                    <Check className="w-4 h-4" /> Saved successfully
-                  </span>
-                )}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Mobile Viewport</label>
+                <select value={widgetMobileShow ? "show" : "hide"} onChange={(e) => setWidgetMobileShow(e.target.value === "show")}
+                  className="w-full bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 px-2 cursor-pointer focus:outline-none font-sans">
+                  <option value="show">Show on Mobile viewports</option>
+                  <option value="hide">Hide Widget on Mobile</option>
+                </select>
               </div>
             </div>
+          )}
 
-            {/* Widget Preview Column */}
-            <div className="lg:col-span-1">
-              <WidgetPreview
-                bubbleColor={bot.bubble_color}
-                headerColor={bot.header_color}
-                accentColor={bot.accent_color}
-                welcomeMessage={bot.welcome_message}
-                inputPlaceholder={bot.input_placeholder}
-                botName={bot.name}
-              />
+          <div className="flex flex-col gap-2 pt-4 border-t border-white/5 mt-4">
+            <Button onClick={handleSave} disabled={saving}
+              className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-9 text-[12px] font-bold px-4 transition-all border-none flex items-center gap-1.5 cursor-pointer justify-center">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              <span>{saving ? "Saving..." : "Save changes"}</span>
+            </Button>
+            {saveSuccess && (
+              <p className="text-[10px] text-green-400 font-semibold flex items-center gap-1 justify-center font-sans">
+                <Check className="w-3.5 h-3.5" /> Saved successfully
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderWidgetViewport = () => (
+    <div className="w-full animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full h-[580px] bg-[#16161a] border border-white/5 rounded-[22px] overflow-hidden flex flex-col relative">
+        {/* macOS browser top bar */}
+        <div className="bg-[#0e0e10] border-b border-white/5 px-4 h-12 flex items-center justify-between shrink-0 select-none">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#FF5F56]" />
+            <span className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+            <span className="w-3 h-3 rounded-full bg-[#27C93F]" />
+          </div>
+          <div className="flex items-center gap-2 text-[12px] text-zinc-500">
+            <span>Preview on</span>
+            <div className="relative w-64">
+              <input type="text" readOnly value="localhost:3000"
+                className="bg-[#1a1a1f] border border-white/5 rounded-lg pl-3 pr-8 py-1 h-7 w-full text-white placeholder-zinc-600 focus:outline-none" />
+              <span className="absolute right-2.5 top-1.5 text-zinc-600">→</span>
             </div>
           </div>
-        )}
+          <div className="w-12" />
+        </div>
 
-        {tab === "Widget" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-            {/* Widget Styling */}
-            <div className="lg:col-span-2 dashboard-card flex flex-col gap-4">
-              <div className="pb-2 border-b border-[#24262D]">
-                <h3 className="text-card-title text-[#F5F5F5]">Widget Customization</h3>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  { key: "bubble_color", label: "Launcher Bubble Color" },
-                  { key: "header_color", label: "Chat Header Color" },
-                  { key: "accent_color", label: "Input / Send Accent Color" },
-                ].map((field) => (
-                  <div key={field.key} className="space-y-1.5">
-                    <label className="text-[11px] font-semibold text-[#8B919D] uppercase tracking-wider block">
-                      {field.label}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={bot[field.key] || "#E8281E"}
-                        onChange={(e) => updateField(field.key, e.target.value)}
-                        className="w-10 h-10 rounded-xl border border-[#2A2E36] bg-[#101113] cursor-pointer shrink-0"
-                      />
-                      <Input
-                        value={bot[field.key] || ""}
-                        onChange={(e) => updateField(field.key, e.target.value)}
-                        className="bg-[#101113] border-[#2A2E36] text-[13px] rounded-xl text-[#F5F5F5] h-10 focus:ring-1 focus:ring-[#E8281E]"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3 mt-4 pt-2 border-t border-[#24262D]">
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-10 px-5 text-[13px] font-medium transition-colors border-none flex items-center gap-1.5 cursor-pointer"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>{saving ? "Saving changes..." : "Save changes"}</span>
-                </Button>
-                {saveSuccess && (
-                  <span className="text-[12px] text-green-400 font-semibold flex items-center gap-1">
-                    <Check className="w-4 h-4" /> Saved successfully
-                  </span>
-                )}
+        {/* Viewport */}
+        <div className="flex-1 bg-[#0c0c0e] relative p-6 overflow-hidden select-none">
+          <div className="w-full h-full opacity-10 pointer-events-none flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="h-4 w-24 bg-white/10 rounded" />
+              <div className="flex gap-4">
+                <div className="h-3 w-12 bg-white/10 rounded" />
+                <div className="h-3 w-12 bg-white/10 rounded" />
+                <div className="h-3 w-12 bg-white/10 rounded" />
               </div>
             </div>
-
-            {/* Widget Preview Column */}
-            <div className="lg:col-span-1">
-              <WidgetPreview
-                bubbleColor={bot.bubble_color}
-                headerColor={bot.header_color}
-                accentColor={bot.accent_color}
-                welcomeMessage={bot.welcome_message}
-                inputPlaceholder={bot.input_placeholder}
-                botName={bot.name}
-              />
+            <div className="h-28 bg-white/5 rounded-xl flex items-center justify-center">
+              <div className="h-3.5 w-48 bg-white/10 rounded" />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="h-24 bg-white/5 rounded-xl" />
+              <div className="h-24 bg-white/5 rounded-xl" />
+              <div className="h-24 bg-white/5 rounded-xl" />
             </div>
           </div>
-        )}
 
-        {tab === "Test" && (
-          <div className="dashboard-card flex flex-col gap-4">
-            <div className="pb-2 border-b border-[#24262D]">
-              <h3 className="text-card-title text-[#F5F5F5]">Live Chat Sandbox</h3>
+          {/* Widget preview */}
+          <div
+            style={{
+              bottom: `${widgetSpacing}px`,
+              left:  widgetPlacement === "left"  ? `${widgetSpacing}px` : "auto",
+              right: widgetPlacement === "right" ? `${widgetSpacing}px` : "auto",
+            }}
+            className={`absolute z-10 w-[295px] h-[395px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border transition-all duration-200 ${
+              isHeaderColorLight(bot.header_color)
+                ? "bg-white text-slate-900 border-slate-200"
+                : "bg-[#101012] text-white border-white/5"
+            }`}
+          >
+            <div className="px-3.5 py-3 flex items-center gap-2.5 transition-colors text-white shrink-0"
+              style={{ backgroundColor: bot.header_color || "#101113" }}>
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white text-[11px] font-semibold shrink-0">
+                {bot.name ? bot.name.slice(0, 2).toUpperCase() : "FB"}
+              </div>
+              <div>
+                <p className="text-[13px] font-bold leading-none">{bot.name || "FenBot"}</p>
+                <span className="text-[9px] opacity-75 mt-0.5 block leading-none">Online now</span>
+              </div>
             </div>
-            <p className="text-[13px] text-[#8B919D] leading-relaxed max-w-2xl">
-              This sandbox tests your actual chatbot grounded with RAG context, tone, and brand persona configuration.
-            </p>
-            <div className="mt-2">
-              <ChatSandbox chatbot_id={id} chatbot_name={bot.name} />
+            <div className={`flex-1 p-3 overflow-y-auto ${isHeaderColorLight(bot.header_color) ? "bg-[#F5F7FF]" : "bg-[#161619]"}`}>
+              <div className="flex items-end gap-2">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0"
+                  style={{ backgroundColor: bot.header_color || "#101113" }}>
+                  {bot.name ? bot.name.slice(0, 2).toUpperCase() : "FB"}
+                </div>
+                <div className={`rounded-xl rounded-bl-md px-3 py-2 text-[12px] shadow-sm max-w-[80%] leading-relaxed ${
+                  isHeaderColorLight(bot.header_color) ? "bg-white text-slate-800" : "bg-white/5 text-[#F5F5F5] border border-white/5"
+                }`}>
+                  {bot.welcome_message || "Hello! How can I help you today?"}
+                </div>
+              </div>
+            </div>
+            <div className={`flex items-center gap-2 p-2.5 border-t shrink-0 ${
+              isHeaderColorLight(bot.header_color) ? "border-slate-100 bg-white" : "border-white/5 bg-[#101012]"
+            }`}>
+              <div className={`flex-1 rounded-full px-3 py-1.5 text-[11px] truncate ${
+                isHeaderColorLight(bot.header_color) ? "bg-[#F5F7FF] border border-slate-100 text-slate-400" : "bg-white/5 border border-white/5 text-zinc-500"
+              }`}>
+                {bot.input_placeholder || "Type your message..."}
+              </div>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
+                style={{ backgroundColor: bot.accent_color || "#E8281E" }}>
+                <Send className="w-3 h-3 text-white" />
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
-}
 
-function ChatSandbox({ chatbot_id, chatbot_name }: { chatbot_id: string; chatbot_name: string }) {
-  const { messages, sendMessage, status } = useChatAi(chatbot_id);
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const renderTestTab = () => (
+    <div className="bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-6 flex flex-col gap-6">
+      <div className="pb-3 border-b border-white/5">
+        <h3 className="text-[16px] font-bold text-white">Live Chat Sandbox</h3>
+        <p className="text-[12px] text-zinc-500 mt-1">
+          This sandbox tests your actual chatbot grounded with RAG context, tone, and brand persona configuration.
+        </p>
+      </div>
+      <div className="mt-2 flex justify-center">
+        <ChatSandbox chatbot_id={id} chatbot_name={bot.name} />
+      </div>
+    </div>
+  );
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, status]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || status === "streaming") return;
-    sendMessage({ text: input });
-    setInput("");
-  };
-
-  const getMessageText = (message: any) => {
-    if (message.content) return message.content;
-    if (Array.isArray(message.parts)) {
-      return message.parts
-        .filter((p: any) => p.type === "text")
-        .map((p: any) => p.text)
-        .join(" ");
-    }
-    return "";
-  };
+  // ── Main render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-[560px] w-[calc(100vw-4rem)] sm:w-[480px] shrink-0 mx-auto bg-[#101113] border border-[#20232A] rounded-2xl overflow-hidden shadow-2xl">
+    <div className="w-full max-w-[1600px] mx-auto text-[#FAFAFA] min-w-0 font-sans tracking-tight">
       {/* Header */}
-      <div className="h-14 px-4 border-b border-[#20232A] flex items-center gap-3 shrink-0 bg-[#16181D]">
-        <div className="w-8 h-8 rounded-lg bg-[#20232A] border border-[#2A2E36] flex items-center justify-center text-[#E8281E]">
-          <Bot className="w-4 h-4" />
-        </div>
+      <div className="flex items-center gap-4 pb-4 border-b border-white/5 mb-6">
+        <button onClick={() => router.push("/dashboard/chatbots")}
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#111111] border border-white/5 text-[#71717A] hover:text-white transition-colors cursor-pointer">
+          <ArrowLeft className="w-4 h-4" />
+        </button>
         <div>
-          <h4 className="text-[13px] font-bold text-[#F5F5F5]">{chatbot_name} Sandbox</h4>
-          <span className="text-[10px] text-[#8B919D] block">Live testing panel</span>
+          <h2 className="text-[20px] font-bold text-white leading-none">{bot.name}</h2>
+          <p className="text-[12px] text-zinc-500 mt-1.5">
+            Configure training knowledge, system behavior instructions, widget styling, and run live sandbox tests.
+          </p>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
-        {messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xs mx-auto space-y-3">
-            <div className="w-10 h-10 rounded-full bg-[#16181D] border border-[#2A2E36] flex items-center justify-center text-[#8B919D]">
-              <Bot className="w-5 h-5" />
-            </div>
-            <p className="text-[12px] text-[#8B919D] leading-relaxed">
-              Send a message to test how your chatbot answers questions based on your knowledge base and tone.
-            </p>
-          </div>
-        ) : (
-          messages.map((m) => {
-            const text = getMessageText(m);
-            if (!text) return null;
+      {/* Tab navigation */}
+      <div className="border-b border-white/5 pb-6 mb-8 select-none">
+        <div className="bg-[#111113]/80 border border-white/5 p-1 rounded-2xl inline-flex flex-wrap gap-1">
+          {TABS_WITH_META.map((t) => {
+            const active = tab === t.name;
             return (
-              <div
-                key={m.id}
-                className={`flex flex-col max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
-                  m.role === "user"
-                    ? "self-end bg-[#E8281E] text-white rounded-br-none"
-                    : "self-start bg-[#16181D] border border-[#2A2E36] text-[#F5F5F5] rounded-bl-none"
+              <button
+                key={t.name}
+                onClick={() => { setTab(t.name); if (t.name !== "Widget") setWidgetSubTab("menu"); }}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold transition-all border cursor-pointer select-none ${
+                  active
+                    ? "bg-[#18181b] border-white/5 text-white animate-in fade-in duration-200"
+                    : "bg-transparent border-transparent text-zinc-400 hover:text-zinc-300 hover:bg-[#161619]/45"
                 }`}
               >
-                <span className="whitespace-pre-wrap">{text}</span>
-              </div>
+                <t.icon size={14} className={active ? "text-[#E8281E]" : "text-zinc-500"} />
+                <span>{t.name}</span>
+              </button>
             );
-          })
-        )}
-        {status === "streaming" && (
-          <div className="self-start bg-[#16181D] border border-[#2A2E36] rounded-2xl rounded-bl-none px-4 py-2.5 text-[13px] flex items-center gap-2 text-[#8B919D]">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Thinking...</span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+          })}
+        </div>
       </div>
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-[#20232A] bg-[#16181D] shrink-0">
-        <div className="flex items-center gap-2 bg-[#101113] border border-[#2A2E36] rounded-xl p-1.5 focus-within:border-[#E8281E]/60 transition-colors">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={status === "streaming"}
-            placeholder={`Message ${chatbot_name}...`}
-            className="flex-1 bg-transparent border-none text-[13px] text-[#F5F5F5] placeholder-[#8B919D] px-2 py-1.5 focus:outline-none disabled:opacity-50"
-          />
-          <Button
-            type="submit"
-            disabled={!input.trim() || status === "streaming"}
-            size="icon"
-            className="w-8 h-8 rounded-lg bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 flex items-center justify-center border-none cursor-pointer"
-          >
-            <Send className="w-3.5 h-3.5" />
-          </Button>
+      {/* Tab content */}
+      {tab === "Widget" ? (
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {renderWidgetSettings()}
+          <div className="flex-1 min-w-0 w-full">{renderWidgetViewport()}</div>
         </div>
-      </form>
+      ) : (
+        <div className="w-full animate-in fade-in duration-200">
+          {tab === "Knowledge Base" && (
+            <KnowledgeBaseTab
+              docs={docs}
+              onAddSource={(content) => handleAddSource("Text", "Raw Text", content)}
+              handleDeleteDoc={handleDeleteDoc}
+            />
+          )}
+          {tab === "Persona" && renderPersonaTab()}
+          {tab === "Test"    && renderTestTab()}
+        </div>
+      )}
     </div>
   );
 }
+
+
