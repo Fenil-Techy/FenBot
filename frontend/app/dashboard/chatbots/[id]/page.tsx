@@ -217,74 +217,74 @@ export default function ManageChatbotPage() {
   // ── Render helpers ─────────────────────────────────────────────────────────
 
   const renderPersonaTab = () => (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 items-start">
-      <div className="xl:col-span-2 bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-6 flex flex-col gap-6">
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+      {/* Left panel (sidebar): Persona settings */}
+      <div className="w-full lg:w-80 shrink-0 bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-5 flex flex-col gap-5">
         <div className="pb-3 border-b border-white/5">
           <h3 className="text-[16px] font-bold text-white">Persona Customization</h3>
           <p className="text-[12px] text-zinc-500 mt-1">Control your bot's behavior, tone, and active guidelines.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Bot Name</label>
             <Input value={bot.name || ""} onChange={(e) => updateField("name", e.target.value)}
-              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+              className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 w-full focus:outline-none" />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Response Tone</label>
             <select value={bot.tone || "friendly"} onChange={(e) => updateField("tone", e.target.value)}
-              className="w-full bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 px-3 focus:outline-none focus:border-[#E8281E]/40 transition-all cursor-pointer font-sans">
+              className="w-full bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 px-2 focus:outline-none cursor-pointer font-sans">
               <option value="friendly">Friendly</option>
               <option value="professional">Professional</option>
               <option value="casual">Casual</option>
             </select>
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
+          <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Welcome Message</label>
             <Input value={bot.welcome_message || ""} onChange={(e) => updateField("welcome_message", e.target.value)}
-              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+              className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 w-full focus:outline-none" />
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Input Field Placeholder</label>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Input Placeholder</label>
             <Input value={bot.input_placeholder || ""} onChange={(e) => updateField("input_placeholder", e.target.value)}
-              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+              className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 w-full focus:outline-none" />
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
+          <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Output Language</label>
             <Input value={bot.language || "English"} onChange={(e) => updateField("language", e.target.value)}
-              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white h-10 w-full focus:outline-none focus:border-[#E8281E]/40 transition-all" />
+              className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white h-9 w-full focus:outline-none" />
           </div>
 
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">System Guidelines / Instruction Persona</label>
-            <Textarea rows={5} value={bot.persona || ""} onChange={(e) => updateField("persona", e.target.value)}
-              placeholder="Instructions to control the bot's tone, knowledge behavior, and custom instructions..."
-              className="bg-[#111111] border border-white/5 text-[13px] rounded-xl text-white placeholder-zinc-500 p-3 focus:outline-none focus:border-[#E8281E]/40 transition-all leading-relaxed font-sans" />
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Guidelines / Instruction</label>
+            <Textarea rows={4} value={bot.persona || ""} onChange={(e) => updateField("persona", e.target.value)}
+              placeholder="Instructions to control tone, behavior..."
+              className="bg-[#111111] border border-white/5 text-[12px] rounded-xl text-white placeholder-zinc-500 p-2.5 focus:outline-none leading-relaxed font-sans" />
           </div>
         </div>
 
-        <div className="flex items-center gap-3.5 pt-4 border-t border-white/5 mt-4">
+        <div className="flex flex-col gap-2 pt-4 border-t border-white/5 mt-2">
           <Button onClick={handleSave} disabled={saving}
-            className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-9 text-[12px] font-bold px-4 transition-all border-none flex items-center gap-1.5 cursor-pointer">
+            className="bg-[#E8281E] text-white hover:bg-[#C41F16] disabled:opacity-40 rounded-xl h-9 text-[12px] font-bold px-4 transition-all border-none flex items-center gap-1.5 cursor-pointer justify-center">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            <span>{saving ? "Saving changes..." : "Save changes"}</span>
+            <span>{saving ? "Saving..." : "Save changes"}</span>
           </Button>
           {saveSuccess && (
-            <span className="text-[12px] text-green-400 font-semibold flex items-center gap-1 font-sans">
-              <Check className="w-4 h-4" /> Saved successfully
+            <span className="text-[10px] text-green-400 font-semibold flex items-center gap-1 justify-center font-sans">
+              <Check className="w-3.5 h-3.5" /> Saved successfully
             </span>
           )}
         </div>
       </div>
 
-      <div className="xl:col-span-1 w-full flex justify-center">
-        <WidgetPreview bubbleColor={bot.bubble_color} headerColor={bot.header_color}
-          accentColor={bot.accent_color} welcomeMessage={bot.welcome_message}
-          inputPlaceholder={bot.input_placeholder} botName={bot.name} />
+      {/* Right panel: Live browser preview */}
+      <div className="flex-1 min-w-0 w-full">
+        {renderWidgetViewport()}
       </div>
     </div>
   );
@@ -559,15 +559,99 @@ export default function ManageChatbotPage() {
   );
 
   const renderTestTab = () => (
-    <div className="bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-6 flex flex-col gap-6">
-      <div className="pb-3 border-b border-white/5">
-        <h3 className="text-[16px] font-bold text-white">Live Chat Sandbox</h3>
-        <p className="text-[12px] text-zinc-500 mt-1">
-          This sandbox tests your actual chatbot grounded with RAG context, tone, and brand persona configuration.
-        </p>
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+      {/* Left panel (sidebar): Live sandbox instructions / reset control */}
+      <div className="w-full lg:w-80 shrink-0 bg-[#0e0e10]/40 border border-white/5 rounded-[22px] p-5 flex flex-col gap-5">
+        <div className="pb-3 border-b border-white/5">
+          <h3 className="text-[16px] font-bold text-white font-sans">Live Chat Sandbox</h3>
+          <p className="text-[12px] text-zinc-500 mt-1 font-sans">
+            Test how your AI chatbot responds in real-time with your knowledge grounding and persona guidelines.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-[#111113]/30 border border-white/5 rounded-2xl p-4 text-[12px] leading-relaxed text-zinc-400 space-y-2">
+            <h4 className="font-bold text-white">How it works:</h4>
+            <ul className="list-disc pl-4 space-y-1.5 font-sans">
+              <li>Answers are grounded in documents from your <strong>Knowledge Base</strong>.</li>
+              <li>Responses adopt the selected tone and custom guidelines configured in <strong>Persona</strong>.</li>
+              <li>Simulates the embedded widget behavior.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-white/5 mt-2 flex flex-col gap-2">
+          <Button
+            onClick={() => {
+              // Reload page to reset chat session
+              window.location.reload();
+            }}
+            className="bg-[#151515] border border-white/5 text-[#A1A1AA] hover:bg-[#202020] hover:text-white rounded-xl h-9 text-[12px] font-bold px-4 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <span>Reset Chat Session</span>
+          </Button>
+        </div>
       </div>
-      <div className="mt-2 flex justify-center">
-        <ChatSandbox chatbot_id={id} chatbot_name={bot.name} />
+
+      {/* Right panel: Browser Mockup containing the Live Sandbox */}
+      <div className="flex-1 min-w-0 w-full">
+        <div className="w-full animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full h-[580px] bg-[#16161a] border border-white/5 rounded-[22px] overflow-hidden flex flex-col relative">
+            {/* macOS browser top bar */}
+            <div className="bg-[#0e0e10] border-b border-white/5 px-4 h-12 flex items-center justify-between shrink-0 select-none">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-[#FF5F56]" />
+                <span className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
+                <span className="w-3 h-3 rounded-full bg-[#27C93F]" />
+              </div>
+              <div className="flex items-center gap-2 text-[12px] text-zinc-500">
+                <span>Testing Sandbox on</span>
+                <div className="relative w-64">
+                  <input type="text" readOnly value="localhost:3000/sandbox"
+                    className="bg-[#1a1a1f] border border-white/5 rounded-lg pl-3 pr-8 py-1 h-7 w-full text-white placeholder-zinc-600 focus:outline-none" />
+                  <span className="absolute right-2.5 top-1.5 text-zinc-600">→</span>
+                </div>
+              </div>
+              <div className="w-12" />
+            </div>
+
+            {/* Viewport rendering ChatSandbox */}
+            <div className="flex-1 bg-[#0c0c0e] relative p-6 overflow-hidden select-text">
+              {/* Mock website background */}
+              <div className="w-full h-full opacity-10 pointer-events-none flex flex-col gap-6">
+                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                  <div className="h-4 w-24 bg-white/10 rounded" />
+                  <div className="flex gap-4">
+                    <div className="h-3 w-12 bg-white/10 rounded" />
+                    <div className="h-3 w-12 bg-white/10 rounded" />
+                    <div className="h-3 w-12 bg-white/10 rounded" />
+                  </div>
+                </div>
+                <div className="h-28 bg-white/5 rounded-xl flex items-center justify-center">
+                  <div className="h-3.5 w-48 bg-white/10 rounded" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="h-24 bg-white/5 rounded-xl" />
+                  <div className="h-24 bg-white/5 rounded-xl" />
+                  <div className="h-24 bg-white/5 rounded-xl" />
+                </div>
+              </div>
+
+              {/* ChatSandbox styled as the floating widget */}
+              <ChatSandbox
+                chatbot_id={id}
+                chatbot_name={bot.name}
+                header_color={bot.header_color}
+                bubble_color={bot.bubble_color}
+                accent_color={bot.accent_color}
+                welcome_message={bot.welcome_message}
+                input_placeholder={bot.input_placeholder}
+                widget_spacing={widgetSpacing}
+                widget_placement={widgetPlacement}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
