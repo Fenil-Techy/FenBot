@@ -24,7 +24,7 @@ export function DashboardTopNav() {
     <header className="h-[64px] px-8 border-b border-white/5 bg-[#090909]/60 backdrop-blur-md flex items-center justify-between sticky top-0 z-30 shrink-0 select-none">
       {/* Left Title */}
       <div className="flex items-center">
-        <h1 className="text-[18px] font-semibold text-[#FAFAFA] font-sans tracking-tight">
+        <h1 className="text-[22px] font-bold text-[#FAFAFA] font-sans tracking-tight">
           {title}
         </h1>
       </div>
@@ -66,14 +66,6 @@ export function DashboardTopNav() {
           <Bell size={15} strokeWidth={1.5} />
         </button>
 
-        {/* Create Chatbot CTA */}
-        <Button
-          onClick={() => router.push("/dashboard/chatbots")}
-          className="bg-[#E8281E] hover:bg-[#FF3B30] text-white rounded-xl h-9 text-[12px] font-semibold flex items-center gap-1.5 px-4 transition-all cursor-pointer border-none ml-2"
-        >
-          <Plus size={13} strokeWidth={2.5} />
-          <span>Create Chatbot</span>
-        </Button>
       </div>
     </header>
   );
