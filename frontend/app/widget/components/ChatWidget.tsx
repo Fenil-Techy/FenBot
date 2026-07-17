@@ -5,6 +5,19 @@ import { useChatAi } from "@/hooks/useChatAi";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 
+function isHeaderColorLight(hex?: string) {
+  if (!hex) return false;
+  const c = hex.replace("#", "");
+  if (c.toLowerCase() === "ffffff" || c.toLowerCase() === "fafafa") return true;
+  if (c.length === 6) {
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 180;
+  }
+  return false;
+}
+
 export function ChatWidget({ chatbot_id }: { chatbot_id: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const { messages, sendMessage, status } = useChatAi(chatbot_id);
@@ -32,12 +45,17 @@ export function ChatWidget({ chatbot_id }: { chatbot_id: string }) {
     );
   }, [isOpen]);
 
-  const bubbleColor = config?.bubble_color ;
-  const headerColor = config?.header_color ;
-  const accentColor = config?.accent_color ;
+  const bubbleColor = config?.bubble_color;
+  const headerColor = config?.header_color;
+  const accentColor = config?.accent_color;
   const botName = config?.name || "FenBot Support";
   const welcomeMessage = config?.welcome_message;
   const inputPlaceholder = config?.input_placeholder;
+
+  const isLight = isHeaderColorLight(headerColor);
+  const isBubbleLight = isHeaderColorLight(bubbleColor);
+  // For the real widget, derive dark from luminance — no dashboard state available
+  const isDarkTheme = !isHeaderColorLight(headerColor);
 
   return (
     <>
@@ -54,57 +72,82 @@ export function ChatWidget({ chatbot_id }: { chatbot_id: string }) {
       <div className="relative w-full h-full">
         <div className="absolute bottom-5 right-5 flex flex-col items-end">
           {/* Panel */}
-          {isOpen && (
-            <div className="mb-3 w-[380px] h-[580px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-              {/* Header */}
-              <div
-                className="px-4 py-4 flex items-center justify-between transition-colors duration-200"
-                style={{ backgroundColor: headerColor }}
-              >
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/logo/apple-touch-icon.png"
-                    alt="FenBot Logo"
-                    className="w-9 h-9 rounded-full shrink-0 object-contain bg-white p-1"
-                  />
-                  <div>
-                    <p className="text-white font-medium text-sm leading-tight">{botName}</p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0EA5A4] opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0EA5A4]"></span>
-                      </span>
-                      <span className="text-slate-300 text-xs">Online now</span>
+          {isOpen && (() => {
+            return (
+              <div className={`mb-3 w-[380px] h-[580px] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 border ${
+                isDarkTheme
+                  ? "bg-[#101012] text-white border-white/5"
+                  : "bg-white text-slate-900 border-slate-200"
+              }`}>
+                {/* Header */}
+                <div
+                  className={`px-4 py-4 flex items-center justify-between transition-colors duration-200 border-b ${
+                    isLight ? "border-slate-100 bg-white" : "border-transparent"
+                  }`}
+                  style={{ backgroundColor: headerColor }}
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="/logo/apple-touch-icon.png"
+                      alt="FenBot Logo"
+                      className={`w-9 h-9 rounded-full shrink-0 object-contain p-1 ${
+                        isLight ? "bg-slate-100" : "bg-white"
+                      }`}
+                    />
+                    <div>
+                      <p className={`font-medium text-sm leading-tight ${isLight ? "text-slate-800" : "text-white"}`}>
+                        {botName}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0EA5A4] opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0EA5A4]"></span>
+                        </span>
+                        <span className={`text-xs ${isLight ? "text-slate-400" : "text-slate-300"}`}>
+                          Online now
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className={`transition cursor-pointer border-none bg-transparent ${
+                      isLight ? "text-slate-400 hover:text-slate-700" : "text-slate-300 hover:text-white"
+                    }`}
+                    aria-label="Close chat"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-slate-300 hover:text-white transition cursor-pointer border-none bg-transparent"
-                  aria-label="Close chat"
-                >
-                  <X size={20} />
-                </button>
+
+                {/* Messages */}
+                <MessageList
+                  messages={messages}
+                  status={status}
+                  welcomeMessage={welcomeMessage}
+                  accentColor={accentColor}
+                  isDark={isDarkTheme}
+                />
+
+                {/* Input */}
+                <ChatInput
+                  onSend={(text) => sendMessage({ text })}
+                  disabled={status === "streaming"}
+                  placeholder={inputPlaceholder}
+                  accentColor={accentColor}
+                  isDark={isDarkTheme}
+                />
               </div>
-
-              {/* Messages */}
-              <MessageList messages={messages} status={status} welcomeMessage={welcomeMessage} />
-
-              {/* Input */}
-              <ChatInput
-                onSend={(text) => sendMessage({ text })}
-                disabled={status === "streaming"}
-                placeholder={inputPlaceholder}
-                accentColor={accentColor}
-              />
-            </div>
-          )}
+            );
+          })()}
 
           {/* Launcher button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            style={{ backgroundColor: bubbleColor }}
-            className="w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center transition-transform hover:scale-105 cursor-pointer border-none"
+            style={{ backgroundColor: bubbleColor || "#E8281E" }}
+            className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 cursor-pointer border-none ${
+              isBubbleLight ? "text-slate-800 border border-slate-200" : "text-white"
+            }`}
             aria-label="Toggle chat"
           >
             {isOpen ? <X size={24} /> : <MessageCircle size={24} />}

@@ -20,9 +20,9 @@ import { ChatSandbox } from "@/components/dashboard/chatbots/ChatSandbox";
 
 const TABS_WITH_META = [
   { name: "Knowledge Base", icon: BookOpen, desc: "Manage grounding documents" },
-  { name: "Persona",        icon: Compass,  desc: "Tweak AI behavior instructions" },
-  { name: "Widget",         icon: Palette,  desc: "Brand appearance & theme" },
-  { name: "Test",           icon: Play,     desc: "Run live simulator sandbox" },
+  { name: "Persona", icon: Compass, desc: "Tweak AI behavior instructions" },
+  { name: "Widget", icon: Palette, desc: "Brand appearance & theme" },
+  { name: "Test", icon: Play, desc: "Run live simulator sandbox" },
 ] as const;
 
 type Tab = (typeof TABS_WITH_META)[number]["name"];
@@ -70,6 +70,8 @@ export default function ManageChatbotPage() {
   const [widgetPlacement, setWidgetPlacement] = useState<"left" | "right">("right");
   const [widgetSpacing, setWidgetSpacing] = useState(20);
   const [widgetMobileShow, setWidgetMobileShow] = useState(true);
+  // Separate theme state — decoupled from header_color to prevent resets on color changes
+  const [widgetTheme, setWidgetTheme] = useState<"light" | "dark">("dark");
 
   const supabase = createClient();
 
@@ -300,8 +302,8 @@ export default function ManageChatbotPage() {
           <div className="space-y-3">
             {[
               { id: "appearance" as const, title: "Appearance", desc: "Customize widget theme and colors.", icon: Palette },
-              { id: "language"   as const, title: "Language",   desc: "Set language and default phrases.",  icon: Globe },
-              { id: "visibility" as const, title: "Visibility", desc: "Adjust alignment and offset.",        icon: Play },
+              { id: "language" as const, title: "Language", desc: "Set language and default phrases.", icon: Globe },
+              { id: "visibility" as const, title: "Visibility", desc: "Adjust alignment and offset.", icon: Play },
             ].map((item) => (
               <button key={item.id} onClick={() => setWidgetSubTab(item.id)}
                 className="bg-[#111113]/30 border border-white/5 rounded-2xl p-4 hover:border-white/10 hover:bg-[#161619]/40 text-left w-full transition-all cursor-pointer flex gap-3.5 items-start group">
@@ -329,19 +331,17 @@ export default function ManageChatbotPage() {
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">Theme</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => { updateField("header_color", "#FFFFFF"); updateField("bubble_color", "#FAFAFA"); }}
-                    className={`border rounded-xl p-2.5 text-left transition-all relative overflow-hidden h-20 flex flex-col justify-between cursor-pointer ${
-                      isHeaderColorLight(bot.header_color) ? "bg-[#161619] border-white/10 text-white" : "bg-[#111113]/30 border-white/5 text-zinc-500 hover:text-zinc-300"
-                    }`}>
-                    {isHeaderColorLight(bot.header_color) && <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#E8281E] rounded-full flex items-center justify-center text-white text-[8px] font-bold">✓</span>}
+                  <button type="button" onClick={() => { setWidgetTheme("light"); updateField("header_color", "#FFFFFF"); updateField("bubble_color", "#FAFAFA"); }}
+                    className={`border rounded-xl p-2.5 text-left transition-all relative overflow-hidden h-20 flex flex-col justify-between cursor-pointer ${widgetTheme === "light" ? "bg-[#161619] border-white/10 text-white" : "bg-[#111113]/30 border-white/5 text-zinc-500 hover:text-zinc-300"
+                      }`}>
+                    {widgetTheme === "light" && <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#E8281E] rounded-full flex items-center justify-center text-white text-[8px] font-bold">✓</span>}
                     <div className="w-full h-6 bg-white border border-slate-100 rounded-md opacity-30" />
                     <span className="text-[11px] font-bold">Light</span>
                   </button>
-                  <button type="button" onClick={() => { updateField("header_color", "#101113"); updateField("bubble_color", "#E8281E"); }}
-                    className={`border rounded-xl p-2.5 text-left transition-all relative overflow-hidden h-20 flex flex-col justify-between cursor-pointer ${
-                      !isHeaderColorLight(bot.header_color) ? "bg-[#161619] border-white/10 text-white" : "bg-[#111113]/30 border-white/5 text-zinc-500 hover:text-zinc-300"
-                    }`}>
-                    {!isHeaderColorLight(bot.header_color) && <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#E8281E] rounded-full flex items-center justify-center text-white text-[8px] font-bold">✓</span>}
+                  <button type="button" onClick={() => { setWidgetTheme("dark"); updateField("header_color", "#101113"); updateField("bubble_color", "#E8281E"); }}
+                    className={`border rounded-xl p-2.5 text-left transition-all relative overflow-hidden h-20 flex flex-col justify-between cursor-pointer ${widgetTheme === "dark" ? "bg-[#161619] border-white/10 text-white" : "bg-[#111113]/30 border-white/5 text-zinc-500 hover:text-zinc-300"
+                      }`}>
+                    {widgetTheme === "dark" && <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#E8281E] rounded-full flex items-center justify-center text-white text-[8px] font-bold">✓</span>}
                     <div className="w-full h-6 bg-[#1a1a1f] border border-white/5 rounded-md opacity-30" />
                     <span className="text-[11px] font-bold">Dark</span>
                   </button>
@@ -355,7 +355,7 @@ export default function ManageChatbotPage() {
                     const sel = bot.accent_color === color;
                     return (
                       <button key={color} type="button"
-                        onClick={() => { updateField("accent_color", color); updateField("bubble_color", color); }}
+                        onClick={() => { updateField("accent_color", color); updateField("header_color", color); }}
                         style={{ backgroundColor: color }}
                         className={`w-7 h-7 rounded-full border cursor-pointer transition-all flex items-center justify-center ${sel ? "scale-105 border-white" : "border-white/10 hover:scale-105"}`}>
                         {sel && <span className={`text-[8px] font-bold ${color === "#FAFAFA" ? "text-slate-900" : "text-white"}`}>✓</span>}
@@ -366,7 +366,7 @@ export default function ManageChatbotPage() {
                     style={{ background: "conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)" }}>
                     <span className="absolute inset-0 flex items-center justify-center text-[10px] pointer-events-none drop-shadow">🎨</span>
                     <input type="color" value={bot.accent_color || "#E8281E"}
-                      onChange={(e) => { updateField("accent_color", e.target.value); updateField("bubble_color", e.target.value); }}
+                      onChange={(e) => { updateField("accent_color", e.target.value); updateField("header_color", e.target.value); }}
                       className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
                   </div>
                 </div>
@@ -404,9 +404,9 @@ export default function ManageChatbotPage() {
           {widgetSubTab === "language" && (
             <div className="space-y-4">
               {[
-                { key: "language",          label: "Output Language"    },
-                { key: "welcome_message",   label: "Welcome Greeting"   },
-                { key: "input_placeholder", label: "Input Placeholder"  },
+                { key: "language", label: "Output Language" },
+                { key: "welcome_message", label: "Welcome Greeting" },
+                { key: "input_placeholder", label: "Input Placeholder" },
               ].map((f) => (
                 <div key={f.key} className="space-y-1">
                   <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">{f.label}</label>
@@ -504,55 +504,67 @@ export default function ManageChatbotPage() {
           </div>
 
           {/* Widget preview */}
-          <div
-            style={{
-              bottom: `${widgetSpacing}px`,
-              left:  widgetPlacement === "left"  ? `${widgetSpacing}px` : "auto",
-              right: widgetPlacement === "right" ? `${widgetSpacing}px` : "auto",
-            }}
-            className={`absolute z-10 w-[295px] h-[395px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border transition-all duration-200 ${
-              isHeaderColorLight(bot.header_color)
-                ? "bg-white text-slate-900 border-slate-200"
-                : "bg-[#101012] text-white border-white/5"
-            }`}
-          >
-            <div className="px-3.5 py-3 flex items-center gap-2.5 transition-colors text-white shrink-0"
-              style={{ backgroundColor: bot.header_color || "#101113" }}>
-              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white text-[11px] font-semibold shrink-0">
-                {bot.name ? bot.name.slice(0, 2).toUpperCase() : "FB"}
-              </div>
-              <div>
-                <p className="text-[13px] font-bold leading-none">{bot.name || "FenBot"}</p>
-                <span className="text-[9px] opacity-75 mt-0.5 block leading-none">Online now</span>
-              </div>
-            </div>
-            <div className={`flex-1 p-3 overflow-y-auto ${isHeaderColorLight(bot.header_color) ? "bg-[#F5F7FF]" : "bg-[#161619]"}`}>
-              <div className="flex items-end gap-2">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0"
+          {(() => {
+            const isDarkTheme = widgetTheme === "dark";
+            return (
+              <div
+                style={{
+                  bottom: `${widgetSpacing}px`,
+                  left: widgetPlacement === "left" ? `${widgetSpacing}px` : "auto",
+                  right: widgetPlacement === "right" ? `${widgetSpacing}px` : "auto",
+                }}
+                className={`absolute z-10 w-[295px] h-[395px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border transition-all duration-200 ${
+                  isDarkTheme
+                    ? "bg-[#101012] text-white border-white/5"
+                    : "bg-white text-slate-900 border-slate-200"
+                }`}
+              >
+                <div className={`px-3.5 py-3 flex items-center gap-2.5 transition-colors border-b shrink-0 ${isHeaderColorLight(bot.header_color) ? "border-slate-100 text-slate-800" : "border-transparent text-white"
+                  }`}
                   style={{ backgroundColor: bot.header_color || "#101113" }}>
-                  {bot.name ? bot.name.slice(0, 2).toUpperCase() : "FB"}
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 ${isHeaderColorLight(bot.header_color) ? "bg-slate-100 text-slate-800" : "bg-white/20 text-white"
+                    }`}>
+                    {bot.name ? bot.name.slice(0, 2).toUpperCase() : "FB"}
+                  </div>
+                  <div>
+                    <p className={`text-[13px] font-bold leading-none ${isHeaderColorLight(bot.header_color) ? "text-slate-800" : "text-white"}`}>{bot.name || "FenBot"}</p>
+                    <span className={`text-[9px] mt-0.5 block leading-none ${isHeaderColorLight(bot.header_color) ? "text-slate-400" : "text-white/70"}`}>Online now</span>
+                  </div>
                 </div>
-                <div className={`rounded-xl rounded-bl-md px-3 py-2 text-[12px] shadow-sm max-w-[80%] leading-relaxed ${
-                  isHeaderColorLight(bot.header_color) ? "bg-white text-slate-800" : "bg-white/5 text-[#F5F5F5] border border-white/5"
+                <div className={`flex-1 p-3 overflow-y-auto ${isDarkTheme ? "bg-[#161619]" : "bg-[#F5F7FF]"}`}>
+                  <div className="flex items-end gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
+                      isDarkTheme ? "bg-white/10 text-white" : "bg-[#1E3A5F] text-white"
+                    }`}>
+                      {bot.name ? bot.name.slice(0, 2).toUpperCase() : "FB"}
+                    </div>
+                    <div className={`rounded-xl rounded-bl-md px-3 py-2 text-[12px] shadow-sm max-w-[80%] leading-relaxed ${
+                      isDarkTheme
+                        ? "bg-white/5 text-[#F5F5F5] border border-white/5"
+                        : "bg-white text-slate-800 border border-slate-100"
+                    }`}>
+                      {bot.welcome_message || "Hello! How can I help you today?"}
+                    </div>
+                  </div>
+                </div>
+                <div className={`flex items-center gap-2 p-2.5 border-t shrink-0 ${
+                  isDarkTheme ? "border-white/5 bg-[#101012]" : "border-slate-100 bg-white"
                 }`}>
-                  {bot.welcome_message || "Hello! How can I help you today?"}
+                  <div className={`flex-1 rounded-full px-3 py-1.5 text-[11px] truncate border ${
+                    isDarkTheme
+                      ? "bg-white/5 border-white/5 text-zinc-500"
+                      : "bg-[#F5F7FF] border border-slate-100 text-slate-400"
+                  }`}>
+                    {bot.input_placeholder || "Type your message..."}
+                  </div>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
+                    style={{ backgroundColor: bot.accent_color || "#E8281E" }}>
+                    <Send className="w-3 h-3 text-white" />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className={`flex items-center gap-2 p-2.5 border-t shrink-0 ${
-              isHeaderColorLight(bot.header_color) ? "border-slate-100 bg-white" : "border-white/5 bg-[#101012]"
-            }`}>
-              <div className={`flex-1 rounded-full px-3 py-1.5 text-[11px] truncate ${
-                isHeaderColorLight(bot.header_color) ? "bg-[#F5F7FF] border border-slate-100 text-slate-400" : "bg-white/5 border border-white/5 text-zinc-500"
-              }`}>
-                {bot.input_placeholder || "Type your message..."}
-              </div>
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0"
-                style={{ backgroundColor: bot.accent_color || "#E8281E" }}>
-                <Send className="w-3 h-3 text-white" />
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -648,6 +660,7 @@ export default function ManageChatbotPage() {
                 input_placeholder={bot.input_placeholder}
                 widget_spacing={widgetSpacing}
                 widget_placement={widgetPlacement}
+                isDark={widgetTheme === "dark"}
               />
             </div>
           </div>
@@ -683,11 +696,10 @@ export default function ManageChatbotPage() {
               <button
                 key={t.name}
                 onClick={() => { setTab(t.name); if (t.name !== "Widget") setWidgetSubTab("menu"); }}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold transition-all border cursor-pointer select-none ${
-                  active
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold transition-all border cursor-pointer select-none ${active
                     ? "bg-[#18181b] border-white/5 text-white animate-in fade-in duration-200"
                     : "bg-transparent border-transparent text-zinc-400 hover:text-zinc-300 hover:bg-[#161619]/45"
-                }`}
+                  }`}
               >
                 <t.icon size={14} className={active ? "text-[#E8281E]" : "text-zinc-500"} />
                 <span>{t.name}</span>
@@ -713,7 +725,7 @@ export default function ManageChatbotPage() {
             />
           )}
           {tab === "Persona" && renderPersonaTab()}
-          {tab === "Test"    && renderTestTab()}
+          {tab === "Test" && renderTestTab()}
         </div>
       )}
     </div>
