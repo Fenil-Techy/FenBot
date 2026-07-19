@@ -1,182 +1,163 @@
 "use client";
 
-import React, { type RefObject } from "react";
-import { Play, Check } from "lucide-react";
-
-import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-import { STARS_SHADOW_1, STARS_SHADOW_2, STARS_SHADOW_3 } from "@/components/marketing/hero/starfield";
-import { DashboardMockup } from "@/components/marketing/hero/DashboardMockup";
-
-// ─────────────────────────────────────────────────────────────────
-// HeroSection
-// ─────────────────────────────────────────────────────────────────
+import React, { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import Link from "next/link";
+import { ArrowUpRight, Check } from "lucide-react";
 
 interface HeroSectionProps {
   sectionRef?: RefObject<HTMLElement | null>;
 }
 
 export function HeroSection({ sectionRef }: HeroSectionProps) {
+  const forwardVideoRef = useRef<HTMLVideoElement>(null);
+  const backwardVideoRef = useRef<HTMLVideoElement>(null);
+  const [activeVideo, setActiveVideo] = useState<"forward" | "backward">("forward");
+
+  const playVideo = useCallback((direction: "forward" | "backward") => {
+    const nextVideo = direction === "forward" ? forwardVideoRef.current : backwardVideoRef.current;
+    if (!nextVideo) return;
+
+    // The forward and backward files share the same endpoint frame, so the
+    // layer swap should be instantaneous rather than blended.
+    nextVideo.currentTime = 0;
+    setActiveVideo(direction);
+    void nextVideo.play().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const forwardVideo = forwardVideoRef.current;
+    const backwardVideo = backwardVideoRef.current;
+    if (!forwardVideo || !backwardVideo) return;
+
+    void forwardVideo.play().catch(() => undefined);
+
+    return () => {
+      forwardVideo.pause();
+      backwardVideo.pause();
+    };
+  }, []);
+
   return (
     <section
       ref={sectionRef}
       id="hero"
-      aria-label="Hero — FenBot AI customer support"
-      className="relative min-h-screen flex flex-col overflow-visible bg-hero-canvas text-hero-ink"
+      aria-label="FenBot AI customer support"
+      className="relative isolate flex min-h-[100dvh] overflow-hidden bg-[#080909] text-white"
     >
-      {/* ── Animated starfield background ── */}
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none overflow-hidden">
-        <style>{`
-          @keyframes animStar {
-            from { transform: translateY(0px); }
-            to   { transform: translateY(-2000px); }
-          }
-          #stars  { width:1px; height:1px; background:transparent; box-shadow:${STARS_SHADOW_1}; animation:animStar 50s  linear infinite; }
-          #stars:after  { content:" "; position:absolute; top:2000px; width:1px; height:1px; background:transparent; box-shadow:${STARS_SHADOW_1}; }
-          #stars2 { width:2px; height:2px; background:transparent; box-shadow:${STARS_SHADOW_2}; animation:animStar 100s linear infinite; }
-          #stars2:after { content:" "; position:absolute; top:2000px; width:2px; height:2px; background:transparent; box-shadow:${STARS_SHADOW_2}; }
-          #stars3 { width:3px; height:3px; background:transparent; box-shadow:${STARS_SHADOW_3}; animation:animStar 150s linear infinite; }
-          #stars3:after { content:" "; position:absolute; top:2000px; width:3px; height:3px; background:transparent; box-shadow:${STARS_SHADOW_3}; }
-        `}</style>
-        <div id="stars" />
-        <div id="stars2" />
-        <div id="stars3" />
+      {/* The product film is the visual system for the hero, not a separate preview card. */}
+      <video
+        ref={forwardVideoRef}
+        className="hero-video absolute inset-0 -z-20 h-full w-full object-cover object-[63%_center]"
+        style={{ visibility: activeVideo === "forward" ? "visible" : "hidden" }}
+        src="/forward.mp4"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        onEnded={() => playVideo("backward")}
+        aria-hidden="true"
+      />
+      <video
+        ref={backwardVideoRef}
+        className="hero-video absolute inset-0 -z-20 h-full w-full object-cover object-[63%_center]"
+        style={{ visibility: activeVideo === "backward" ? "visible" : "hidden" }}
+        src="/backward.mp4"
+        muted
+        playsInline
+        preload="auto"
+        onEnded={() => playVideo("forward")}
+        aria-hidden="true"
+      />
 
-        {/* Radial glow accents */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-brand/6 blur-[120px]" />
-        <div className="absolute top-[30%] left-[15%] w-[300px] h-[300px] rounded-full bg-indigo-900/20 blur-[100px]" />
-        <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-brand/5 blur-[80px]" />
-      </div>
+      {/* Layered overlays keep the copy readable without flattening the video. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(5,7,8,.96)_0%,rgba(5,7,8,.84)_30%,rgba(5,7,8,.38)_62%,rgba(5,7,8,.12)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(5,7,8,.76)_0%,transparent_32%,rgba(5,7,8,.14)_62%,rgba(5,7,8,.82)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 opacity-25 [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:linear-gradient(to_bottom,black,transparent_72%)]"
+      />
 
-      {/* ── Main content ── */}
-      <div className="relative flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 pt-28 pb-20">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col justify-end px-5 pb-10 pt-28 sm:px-8 sm:pb-14 lg:px-10 lg:pb-16">
+        <div className="max-w-[700px]">
+            <div className="mb-7 inline-flex items-center gap-2 border border-white/15 bg-black/20 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/72 backdrop-blur-md">
+              <span className="size-1.5 rounded-full bg-[#ff4b3e] shadow-[0_0_14px_rgba(255,75,62,.9)]" />
+              Solve customer queries with AI
+            </div>
 
-        {/* Eyebrow badge */}
-        <div className="mb-8 text-center">
-          <AnimatedShinyText className="inline-flex text-gray-400 items-center gap-xs text-eyebrow border border-white/10 rounded-pill px-4 py-1.5 bg-white/[0.03]">
-            <span className="size-1.5 rounded-pill bg-brand animate-pulse" />
-            Build your AI agent, available 24/7
-          </AnimatedShinyText>
-        </div>
+            <h1 className="max-w-[13ch] font-display text-[clamp(3.5rem,7.5vw,7.2rem)] font-semibold leading-[.91] tracking-[-.075em] text-balance text-white">
+              Launch support. Grow faster.
+            </h1>
 
-        {/* Headline */}
-        <div className="mb-6 w-full max-w-5xl mx-auto text-center">
-          <h1 className="font-display font-bold tracking-tight text-white text-4xl sm:text-6xl lg:text-[4.5rem] leading-[1.06] tracking-[-0.04em]">
-            AI chatbot that turn every visitor into a{" "}
-            <span
-              className="relative inline-block"
-              style={{
-                background: "linear-gradient(135deg, #E8281E 0%, #ff6b6b 50%, #E8281E 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+            <p className="mt-7 max-w-[34rem] text-base leading-7 text-white/72 sm:text-lg sm:leading-8">
+              Train your chatbot on your business data and make it live on your website in minutes.
+            </p>
+
+            <form
+              className="mt-9 flex max-w-[560px] flex-col gap-2 sm:flex-row"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const email = new FormData(event.currentTarget).get("email");
+                window.location.href = `/auth/signup?email=${encodeURIComponent(String(email ?? ""))}`;
               }}
             >
-              happy customer
-            </span>
-          </h1>
-        </div>
-
-        {/* Subheadline */}
-        <div className="mb-10 w-full max-w-2xl mx-auto text-center">
-          <p className="text-hero-ink-muted text-lg leading-relaxed font-normal">
-            FenBot answers questions instantly, captures qualified leads, and
-            handles customer support 24/7.
-          </p>
-        </div>
-
-        {/* CTA — email form */}
-        <div className=" mx-auto mb-8">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const emailInput = e.currentTarget.querySelector('input[type="email"]') as HTMLInputElement;
-              window.location.href = `/auth/signup?email=${encodeURIComponent(emailInput?.value || "")}`;
-            }}
-            className="flex flex-row gap-xs w-full mb-sm"
-          >
-            <input
-              type="email"
-              placeholder="Enter your business email"
-              className="h-11  px-4 rounded-lg bg-white/[0.06] border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-brand/70 transition-colors flex-1 min-w-0"
-              required
-            />
-            <button
-              type="submit"
-              className="h-11 px-6 rounded-lg bg-brand hover:bg-brand-hover text-white text-sm font-semibold transition-all duration-200 shadow-lg shadow-red-900/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0 whitespace-nowrap"
-            >
-              Sign up free
-            </button>
-          </form>
-
-          <div className="flex items-center justify-center mt-8 gap-x-6 gap-y-3 flex-wrap text-xs sm:text-sm font-medium text-hero-ink-muted">
-            <span className="flex items-center gap-1.5 whitespace-nowrap transition-colors hover:text-white">
-              <Check className="size-3.5 text-white" strokeWidth={3} />
-              14-day free trial
-            </span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap transition-colors hover:text-white">
-              <Check className="size-3.5 text-white" strokeWidth={3} />
-              No credit card required
-            </span>
-            <span className="flex items-center gap-1.5 whitespace-nowrap transition-colors hover:text-white">
-              <Check className="size-3.5 text-white" strokeWidth={3} />
-              Custom-trained on your business data
-            </span>
-          </div>
-        </div>
-
-        {/* Dashboard preview card */}
-        <div
-          className="w-full max-w-5xl mx-auto relative mt-10 z-20 px-4 sm:px-6 lg:px-8"
-          style={{ marginBottom: "-220px" }}
-        >
-          <div className="relative group hover:scale-[1.01] transition-transform duration-500">
-            {/* Red frame */}
-            <div className="absolute -top-3 -left-3 -right-3 md:-top-4 md:-left-4 md:-right-4 bottom-[40%] rounded-t-3xl md:rounded-t-[32px] bg-brand z-0" />
-
-            <div className="relative rounded-2xl overflow-hidden aspect-video bg-canvas border border-slate-200/50 shadow-2xl">
-              <div className="absolute inset-0 translate-y-16 scale-[1.02]">
-                <DashboardMockup />
-              </div>
-
-              <div
-                className="absolute inset-x-0 bottom-0 h-[45%] pointer-events-none z-20"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, rgba(250,250,250,0) 0%, rgba(250,250,250,.35) 45%, rgba(250,250,250,.85) 75%, #FAFAFA 100%)",
-                }}
+              <label className="sr-only" htmlFor="hero-email">
+                Business email
+              </label>
+              <input
+                id="hero-email"
+                name="email"
+                type="email"
+                placeholder="Enter your business email"
+                autoComplete="email"
+                required
+                className="h-[52px] min-w-0 flex-1 border border-white/18 bg-black/25 px-4 text-sm text-white outline-none backdrop-blur-md transition-colors placeholder:text-white/42 focus:border-white/55"
               />
+              <button
+                type="submit"
+                className="group inline-flex h-[52px] shrink-0 items-center justify-center gap-2 bg-[#ff4b3e] px-6 text-sm font-semibold text-white shadow-[0_16px_44px_rgba(217,49,38,.28)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#ff6559] active:translate-y-0"
+              >
+                Start free
+                <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </button>
+            </form>
 
-              {/* Play */}
-              <Dialog>
-                <DialogTrigger
-                  className="absolute inset-0 flex items-center justify-center z-30"
-                >
-                  <div className="size-16 rounded-pill bg-black/85 hover:bg-brand flex items-center justify-center transition-all duration-300 shadow-xl">
-                    <Play className="size-6 fill-current text-white ml-0.5" />
-                  </div>
-                </DialogTrigger>
+            <Link
+              href="#build-your-agent"
+              className="group mt-3 inline-flex items-center gap-2 text-sm font-medium text-white/70 transition-colors duration-300 hover:text-white"
+            >
+              See how FenBot works
+              <span aria-hidden="true" className="h-px w-7 bg-white/50 transition-all duration-300 group-hover:w-10 group-hover:bg-white" />
+            </Link>
 
-                <DialogContent className="max-w-3xl bg-[#13151f] border-white/10 text-white rounded-2xl">
-                  <DialogHeader>
-                    <DialogTitle>FenBot In Action</DialogTitle>
-                  </DialogHeader>
-
-                  <div className="aspect-video rounded-xl bg-[#0f1117] flex items-center justify-center">
-                    Demo video coming soon
-                  </div>
-                </DialogContent>
-              </Dialog>
-
+            <div className="mt-9 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-white/58">
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="size-3.5 text-[#ff8178]" strokeWidth={2.5} />
+                Free start
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="size-3.5 text-[#ff8178]" strokeWidth={2.5} />
+                No credit card required
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="size-3.5 text-[#ff8178]" strokeWidth={2.5} />
+                Live in 5 minutes
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="size-3.5 text-[#ff8178]" strokeWidth={2.5} />
+                Custom Trained
+              </span>
             </div>
           </div>
+
+        <div className="mt-12 flex items-center justify-between border-t border-white/15 pt-4 text-[10px] font-medium uppercase tracking-[0.18em] text-white/42">
+          <span>AI support grounded in your data</span>
+          <span className="hidden sm:inline">FenBot / Customer intelligence</span>
         </div>
       </div>
     </section>
