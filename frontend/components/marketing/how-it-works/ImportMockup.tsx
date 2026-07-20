@@ -1,72 +1,121 @@
-import React from "react";
-import { Globe, Upload, Loader2, CheckCircle2 } from "lucide-react";
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Play, Pause } from "lucide-react";
 
 export function ImportMockup() {
+  const [isPaused, setIsPaused] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const togglePause = () => {
+    setIsPaused((p) => {
+      const next = !p;
+      if (videoRef.current) {
+        if (next) {
+          videoRef.current.pause();
+        } else {
+          videoRef.current.play().catch((err) => {
+            console.warn("Video playback failed:", err);
+          });
+        }
+      }
+      return next;
+    });
+  };
+
+  // Sync video play/pause with component state
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPaused) {
+      video.pause();
+    } else {
+      video.play().catch((err) => {
+        console.warn("Auto-play blocked or interrupted:", err);
+      });
+    }
+  }, [isPaused]);
+
   return (
-    <div className="w-full h-full flex flex-col justify-between space-y-5">
-      {/* Title */}
-      <div>
-        <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
-          <Globe className="size-5 text-brand" />
-          Sync Knowledge Base
-        </h4>
-        <p className="text-xs text-slate-400 mt-1">
-          Scan and learn FAQ, policies, and products from your live site.
-        </p>
-      </div>
+    <div className="relative w-full overflow-hidden rounded-[32px] bg-[#1a73e8] select-none group shadow-[0_16px_48px_-12px_rgba(0,0,0,0.16)]">
+      {/* Video element */}
+      <video
+        ref={videoRef}
+        src="/importvideo.mp4"
+        loop
+        muted
+        playsInline
+        onClick={togglePause}
+        className="w-full h-auto block cursor-pointer"
+      />
 
-      {/* Input section */}
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            readOnly
-            value="www.fenbot.ai"
-            className="flex-1 h-10 px-3.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none"
-          />
-          <button className="h-10 px-4 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-hover transition-colors shrink-0">
-            Import my site
-          </button>
-        </div>
-      </div>
+      {/* Dim/Blur overlay when paused + central Play icon */}
+      <AnimatePresence>
+        {isPaused && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={togglePause}
+            className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center cursor-pointer z-10"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="size-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl"
+            >
+              <Play className="size-6 text-white fill-white ml-1" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Crawled URL log list */}
-      <div className="space-y-2.5">
-        <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-          <span>Crawler Progress Log</span>
-          <span className="text-brand">2/3 Synced</span>
-        </div>
-        <div className="border border-slate-100 rounded-xl bg-slate-50/50 p-3 space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-650 font-mono font-medium">https://www.fenbot.ai/</span>
-            <span className="flex items-center gap-1 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">
-              <CheckCircle2 className="size-3" /> Synced
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-slate-650 font-mono font-medium">https://www.fenbot.ai/pricing</span>
-            <span className="flex items-center gap-1 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">
-              <CheckCircle2 className="size-3" /> Synced
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-slate-650 font-mono font-medium">https://www.fenbot.ai/features</span>
-            <span className="flex items-center gap-1 text-brand font-semibold bg-red-50 px-2 py-0.5 rounded-full text-[10px]">
-              <Loader2 className="size-3 animate-spin" /> Crawling...
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Upload Zone */}
-      <div className="border border-dashed border-slate-200 bg-slate-50/50 rounded-xl p-4 flex items-center justify-center gap-3 text-center cursor-pointer hover:bg-slate-50 transition-colors">
-        <div className="size-8 rounded-lg bg-red-50 flex items-center justify-center">
-          <Upload className="size-4.5 text-brand" />
-        </div>
-        <div className="text-left">
-          <p className="text-xs font-bold text-slate-700">Upload document guides</p>
-          <p className="text-[10px] text-slate-450">Drop PDFs, TXT, or CSV files here</p>
-        </div>
+      {/* ── Standalone Floating Play/Pause Button Overlay (Circle Outline matching Ref) ── */}
+      <div className="absolute bottom-6 left-6 z-20">
+        <motion.button
+          onClick={togglePause}
+          className="size-10 rounded-full flex items-center justify-center cursor-pointer border-2 border-white/90"
+          style={{
+            background: "rgba(0, 0, 0, 0.25)",
+            backdropFilter: "blur(6px)",
+          }}
+          whileHover={{
+            scale: 1.08,
+            background: "rgba(0, 0, 0, 0.4)",
+            borderColor: "#ffffff",
+          }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            {isPaused ? (
+              <motion.div
+                key="play"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Play className="size-4 text-white fill-white ml-0.5" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="pause"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Pause className="size-4 text-white fill-white" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </div>
     </div>
   );
